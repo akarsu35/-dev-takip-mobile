@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useTheme } from '../../constants/Colors'
 
 const MENU_ITEMS = [
   {
@@ -32,10 +33,11 @@ const MENU_ITEMS = [
 ]
 
 export default function MoreScreen() {
+  const theme = useTheme()
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>Daha Fazla</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.screenTitle, { color: theme.primary }]}>Daha Fazla</Text>
       </View>
 
       <ScrollView style={styles.content}>
@@ -43,7 +45,7 @@ export default function MoreScreen() {
           {MENU_ITEMS.map((item) => (
             <TouchableOpacity
               key={item.id}
-              style={styles.card}
+              style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }]}
               onPress={() => router.push(item.path as any)}
               activeOpacity={0.7}
             >
@@ -51,10 +53,10 @@ export default function MoreScreen() {
                 <Ionicons name={item.icon as any} size={28} color={item.color} />
               </View>
               <View style={styles.cardInfo}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <Text style={styles.cardSubtitle}>{item.subtitle}</Text>
+                <Text style={[styles.cardTitle, { color: theme.text }]}>{item.title}</Text>
+                <Text style={[styles.cardSubtitle, { color: theme.textMuted }]}>{item.subtitle}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+              <Ionicons name="chevron-forward" size={20} color={theme.textLight} />
             </TouchableOpacity>
           ))}
         </View>
@@ -64,28 +66,26 @@ export default function MoreScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  screenTitle: { fontSize: 24, fontWeight: '900', color: '#7C3AED' },
+  screenTitle: { fontSize: 24, fontWeight: '900' },
   content: { flex: 1 },
   grid: { padding: 16, gap: 12 },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
+    borderWidth: 1,
   },
   iconContainer: {
     width: 56,
@@ -96,6 +96,6 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 17, fontWeight: '800', color: '#1e293b' },
-  cardSubtitle: { fontSize: 13, color: '#64748b', marginTop: 2 },
-})
+  cardTitle: { fontSize: 17, fontWeight: '800' },
+  cardSubtitle: { fontSize: 13, marginTop: 2 },
+});

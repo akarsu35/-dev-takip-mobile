@@ -17,6 +17,7 @@ import { HomeworkStatus } from '../../types'
 import { supabase } from '../../lib/supabase'
 import { useActionSheet } from '@expo/react-native-action-sheet'
 import { Ionicons } from '@expo/vector-icons'
+import { useTheme } from '../../constants/Colors'
 
 const STATUS_EMOJIS: Record<HomeworkStatus, string> = {
   [HomeworkStatus.DONE]: '✅',
@@ -28,6 +29,7 @@ const STATUS_EMOJIS: Record<HomeworkStatus, string> = {
 }
 
 export default function MessagesScreen() {
+  const theme = useTheme()
   const { students, homeworks, messages, addMessage, deleteMessage, deleteAllMessages, loadData } = useStore()
   const [refreshing, setRefreshing] = useState(false)
   const { showActionSheetWithOptions } = useActionSheet()
@@ -78,7 +80,13 @@ export default function MessagesScreen() {
     const cancelButtonIndex = 2
 
     showActionSheetWithOptions(
-      { options, cancelButtonIndex },
+      { 
+        options, 
+        cancelButtonIndex,
+        containerStyle: { borderRadius: 24, backgroundColor: theme.surface, paddingBottom: 20 },
+        titleTextStyle: { color: theme.text },
+        messageTextStyle: { color: theme.textMuted },
+      },
       (selectedIndex) => {
         if (selectedIndex === 0) {
           const msg = generateStudentSummary(studentId)
@@ -110,14 +118,15 @@ export default function MessagesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>💬 Mesaj Geçmişi</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.screenTitle, { color: theme.primary }]}>💬 Mesaj Geçmişi</Text>
       </View>
 
       <TextInput
-        style={styles.searchInput}
+        style={[styles.searchInput, { backgroundColor: theme.surface, borderColor: theme.borderStrong, color: theme.text }]}
         placeholder="🔍 Öğrenci ara..."
+        placeholderTextColor={theme.textLight}
         value={search}
         onChangeText={setSearch}
       />
@@ -134,8 +143,8 @@ export default function MessagesScreen() {
               if (user) await loadData(user.id)
               setRefreshing(false)
             }}
-            colors={['#7C3AED']}
-            tintColor="#7C3AED"
+            colors={[theme.primary]}
+            tintColor={theme.primary}
           />
         }
       >
@@ -145,23 +154,23 @@ export default function MessagesScreen() {
           const msgCount = studentMessages.length
 
           return (
-            <View key={student.id} style={styles.studentCard}>
+            <View key={student.id} style={[styles.studentCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <TouchableOpacity
                 style={styles.cardHeader}
                 onPress={() => setExpandedStudentId(isExpanded ? null : student.id)}
               >
                 <View style={styles.studentInfo}>
-                  <Text style={styles.studentName}>{student.name}</Text>
-                  <Text style={styles.studentClass}>{student.className} • {student.parentName}</Text>
+                  <Text style={[styles.studentName, { color: theme.text }]}>{student.name}</Text>
+                  <Text style={[styles.studentClass, { color: theme.textMuted }]}>{student.className} • {student.parentName}</Text>
                 </View>
                 <View style={styles.headerActions}>
                   {msgCount > 0 && (
-                    <View style={styles.badge}>
+                    <View style={[styles.badge, { backgroundColor: theme.primary }]}>
                       <Text style={styles.badgeText}>{msgCount}</Text>
                     </View>
                   )}
                   <TouchableOpacity
-                    style={styles.sendIcon}
+                    style={[styles.sendIcon, { backgroundColor: theme.background }]}
                     onPress={() => handleSendMessage(student.id)}
                   >
                     <Text style={{ fontSize: 18 }}>💬</Text>
@@ -170,13 +179,13 @@ export default function MessagesScreen() {
               </TouchableOpacity>
 
               {isExpanded && (
-                <View style={styles.historyContainer}>
+                <View style={[styles.historyContainer, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
                   {msgCount === 0 ? (
-                    <Text style={styles.noMsgText}>Bu veliye henüz mesaj gönderilmedi.</Text>
+                    <Text style={[styles.noMsgText, { color: theme.textMuted }]}>Bu veliye henüz mesaj gönderilmedi.</Text>
                   ) : (
                     <>
                       <TouchableOpacity
-                        style={styles.deleteAllBtn}
+                        style={[styles.deleteAllBtn, { backgroundColor: theme.danger + '10', borderColor: theme.danger + '30' }]}
                         onPress={() => {
                           Alert.alert('Tümünü Sil', 'Bu öğrenciye ait tüm mesajları silmek istiyor musunuz?', [
                             { text: 'İptal', style: 'cancel' },
@@ -188,13 +197,13 @@ export default function MessagesScreen() {
                           ])
                         }}
                       >
-                        <Text style={styles.deleteAllBtnText}>🧹 Tüm Geçmişi Temizle</Text>
+                        <Text style={[styles.deleteAllBtnText, { color: theme.danger }]}>🧹 Tüm Geçmişi Temizle</Text>
                       </TouchableOpacity>
                       {studentMessages.map(msg => (
-                        <View key={msg.id} style={styles.msgBubble}>
+                        <View key={msg.id} style={[styles.msgBubble, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                           <View style={styles.msgTextContainer}>
-                            <Text style={styles.msgContent}>{msg.content}</Text>
-                            <Text style={styles.msgDate}>
+                            <Text style={[styles.msgContent, { color: theme.text }]}>{msg.content}</Text>
+                            <Text style={[styles.msgDate, { color: theme.textLight }]}>
                               {new Date(msg.createdAt).toLocaleString('tr-TR', {
                                 dateStyle: 'medium',
                                 timeStyle: 'short'
@@ -202,7 +211,7 @@ export default function MessagesScreen() {
                             </Text>
                           </View>
                           <TouchableOpacity
-                            style={styles.deleteMsgBtn}
+                            style={[styles.deleteMsgBtn, { backgroundColor: theme.danger + '10' }]}
                             onPress={() => {
                               Alert.alert('Mesajı Sil', 'Bu mesajı silmek istediğinize emin misiniz?', [
                                 { text: 'İptal', style: 'cancel' },
@@ -214,7 +223,7 @@ export default function MessagesScreen() {
                               ])
                             }}
                           >
-                            <Ionicons name="trash" size={16} color="#EF4444" />
+                            <Ionicons name="trash" size={16} color={theme.danger} />
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -228,10 +237,10 @@ export default function MessagesScreen() {
         {filteredStudents.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { color: theme.text }]}>
               {search ? 'Aranan isimde mesaj bulunamadı.' : 'Henüz hiç mesaj gönderilmemiş.'}
             </Text>
-            <Text style={styles.emptySubText}>
+            <Text style={[styles.emptySubText, { color: theme.textLight }]}>
               Ödevler veya Kontrol sayfasından mesaj gönderdiğinizde burada listelenir.
             </Text>
           </View>
@@ -241,13 +250,14 @@ export default function MessagesScreen() {
       {/* Custom Message Modal */}
       <Modal visible={isModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
               Özel Mesaj ({activeStudent?.name})
             </Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.background, borderColor: theme.border, color: theme.text }]}
               placeholder="Veliye iletilecek mesaj..."
+              placeholderTextColor={theme.textLight}
               multiline
               autoFocus
               value={modalText}
@@ -256,13 +266,13 @@ export default function MessagesScreen() {
             />
             <View style={styles.modalActions}>
               <TouchableOpacity
-                style={styles.modalBtnCancel}
+                style={[styles.modalBtnCancel, { backgroundColor: theme.background }]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.modalBtnCancelText}>İptal</Text>
+                <Text style={[styles.modalBtnCancelText, { color: theme.textMuted }]}>İptal</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalBtnSend}
+                style={[styles.modalBtnSend, { backgroundColor: theme.primary }]}
                 onPress={() => {
                   if (modalText.trim() && activeStudent) {
                     openWhatsAppAndLog(activeStudent, modalText)
@@ -282,33 +292,27 @@ export default function MessagesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 32, // Başlık daha aşağıda olsun diye paddingTop eklendi
+    paddingTop: 32,
     paddingBottom: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  screenTitle: { fontSize: 24, fontWeight: '900', color: '#7C3AED' },
+  screenTitle: { fontSize: 24, fontWeight: '900' },
   searchInput: {
     marginHorizontal: 16,
     marginVertical: 12,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 12,
     padding: 12,
     fontSize: 14,
-    backgroundColor: '#fff',
   },
   list: { flex: 1, paddingHorizontal: 16 },
   studentCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     overflow: 'hidden'
   },
   cardHeader: {
@@ -318,54 +322,46 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   studentInfo: { flex: 1 },
-  studentName: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
-  studentClass: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  studentName: { fontSize: 16, fontWeight: '700' },
+  studentClass: { fontSize: 12, marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   badge: {
-    backgroundColor: '#7C3AED', // Koyu vurgu rengi
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: '900' },
-  sendIcon: { padding: 8, backgroundColor: '#f1f5f9', borderRadius: 10 },
-  historyContainer: { backgroundColor: '#f8fafc', padding: 16, borderTopWidth: 1, borderTopColor: '#e2e8f0' },
-  noMsgText: { textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', paddingVertical: 12 },
+  sendIcon: { padding: 8, borderRadius: 10 },
+  historyContainer: { padding: 16, borderTopWidth: 1 },
+  noMsgText: { textAlign: 'center', fontStyle: 'italic', paddingVertical: 12 },
   deleteAllBtn: {
-    backgroundColor: '#FEF2F2',
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fecaca'
   },
-  deleteAllBtnText: { color: '#ef4444', fontWeight: '800', fontSize: 13 },
+  deleteAllBtnText: { fontWeight: '800', fontSize: 13 },
   msgBubble: {
-    backgroundColor: '#fff',
     padding: 14,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between'
   },
   msgTextContainer: { flex: 1, paddingRight: 10 },
-  msgContent: { fontSize: 14, color: '#334155', lineHeight: 20 },
-  msgDate: { fontSize: 11, color: '#94a3b8', marginTop: 6, fontWeight: '500' },
+  msgContent: { fontSize: 14, lineHeight: 20 },
+  msgDate: { fontSize: 11, marginTop: 6, fontWeight: '500' },
   deleteMsgBtn: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 4,
   },
-
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -374,7 +370,6 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
     width: '100%',
     borderRadius: 16,
     padding: 20,
@@ -384,15 +379,13 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
   },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: '#1e293b', marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: '800', marginBottom: 16 },
   modalInput: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     borderRadius: 12,
     padding: 16,
     height: 120,
     fontSize: 15,
-    backgroundColor: '#f8fafc',
     marginBottom: 20,
   },
   modalActions: { flexDirection: 'row', gap: 12 },
@@ -400,15 +393,13 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: '#f1f5f9',
     alignItems: 'center',
   },
-  modalBtnCancelText: { color: '#64748b', fontWeight: '700', fontSize: 15 },
+  modalBtnCancelText: { fontWeight: '700', fontSize: 15 },
   modalBtnSend: {
     flex: 1,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: '#7C3AED',
     alignItems: 'center',
   },
   modalBtnSendText: { color: '#fff', fontWeight: '700', fontSize: 15 },
@@ -419,6 +410,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40
   },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 16, color: '#475569', fontWeight: '700', textAlign: 'center' },
-  emptySubText: { fontSize: 14, color: '#94a3b8', textAlign: 'center', marginTop: 8 },
-})
+  emptyText: { fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  emptySubText: { fontSize: 14, textAlign: 'center', marginTop: 8 },
+});

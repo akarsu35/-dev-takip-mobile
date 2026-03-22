@@ -25,6 +25,7 @@ export interface Homework {
   targetClasses: string[]
   targetStudentIds?: string[]
   submissions: Record<string, HomeworkStatus>
+  teacherNotes?: Record<string, string>
   notifiedStudents?: Record<string, boolean>
   notifiedSubmissions?: Record<string, HomeworkStatus>
   userId?: string

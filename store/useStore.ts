@@ -11,9 +11,11 @@ interface StoreState {
   isLoading: boolean
   activeTab: string
   selectedHwId: string | null
+  themePreference: 'light' | 'dark' | 'system'
 
   setActiveTab: (tab: string) => void
   setSelectedHwId: (id: string | null) => void
+  setThemePreference: (pref: 'light' | 'dark' | 'system') => void
   setStudents: (s: Student[]) => void
   setHomeworks: (h: Homework[]) => void
   setMessages: (m: Message[]) => void
@@ -36,6 +38,7 @@ interface StoreState {
   ) => Promise<void>
   markAsNotified: (hwId: string, studentId: string) => Promise<void>
   markStatusAsNotified: (hwId: string, studentId: string, status: HomeworkStatus) => Promise<void>
+  updateTeacherNote: (hwId: string, studentId: string, note: string) => Promise<void>
 
   // Messages Actions
   addMessage: (m: Omit<Message, 'id' | 'createdAt'>) => Promise<void>
@@ -52,9 +55,11 @@ export const useStore = create<StoreState>()(
   isLoading: false,
   activeTab: 'check',
   selectedHwId: null,
+  themePreference: 'system',
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setSelectedHwId: (id) => set({ selectedHwId: id }),
+  setThemePreference: (pref) => set({ themePreference: pref }),
   setStudents: (students) => set({ students }),
   setHomeworks: (homeworks) => set({ homeworks }),
   setMessages: (messages) => set({ messages }),
@@ -139,12 +144,19 @@ export const useStore = create<StoreState>()(
 
       if (homeworksRes.data) {
         const submissionMap: Record<string, Record<string, HomeworkStatus>> = {}
+        const teacherNoteMap: Record<string, Record<string, string>> = {}
         if (submissionsRes.data) {
           submissionsRes.data.forEach((s: any) => {
             if (!submissionMap[s.homeworkId]) {
               submissionMap[s.homeworkId] = {}
             }
+            if (!teacherNoteMap[s.homeworkId]) {
+              teacherNoteMap[s.homeworkId] = {}
+            }
             submissionMap[s.homeworkId][s.studentId] = s.status as HomeworkStatus
+            if (s.teacherNote) {
+              teacherNoteMap[s.homeworkId][s.studentId] = s.teacherNote
+            }
           })
         }
 
@@ -157,6 +169,7 @@ export const useStore = create<StoreState>()(
           targetClasses: h.targetClasses || [],
           targetStudentIds: h.targetStudentIds || [],
           submissions: submissionMap[h.id] || {},
+          teacherNotes: teacherNoteMap[h.id] || {},
           notifiedStudents: h.notifiedStudents || {},
           notifiedSubmissions: h.notifiedSubmissions || {},
           userId: h.userId,
@@ -399,6 +412,40 @@ export const useStore = create<StoreState>()(
       .from('Homework')
       .update({ notifiedSubmissions: updatedNotified })
       .eq('id', hwId)
+  },
+
+  updateTeacherNote: async (hwId: string, studentId: string, note: string) => {
+    const hw = get().homeworks.find((h) => h.id === hwId)
+    if (!hw) return
+
+    const updatedNotes = { ...(hw.teacherNotes || {}), [studentId]: note }
+    const updatedHw = { ...hw, teacherNotes: updatedNotes }
+
+    set((state) => ({
+      homeworks: state.homeworks.map((h) => (h.id === hwId ? updatedHw : h)),
+    }))
+
+    const currentStatus = hw.submissions[studentId] || HomeworkStatus.PENDING
+    const { error } = await supabase
+      .from('Submission')
+      .upsert({ 
+        id: `${hwId}-${studentId}`, 
+        homeworkId: hwId, 
+        studentId: studentId, 
+        status: currentStatus,
+        teacherNote: note,
+        updatedAt: new Date().toISOString()
+      }, {
+        onConflict: 'homeworkId,studentId'
+      })
+
+    if (error) {
+      console.error('updateTeacherNote Supabase error:', error)
+      // Rollback
+      set((state) => ({
+        homeworks: state.homeworks.map((h) => (h.id === hwId ? hw : h)),
+      }))
+    }
   },
 
   addMessage: async (messageData) => {

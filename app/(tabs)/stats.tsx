@@ -9,60 +9,32 @@ import {
   Alert,
   Linking,
   RefreshControl,
+  Modal,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Dimensions } from 'react-native'
-import { BarChart } from 'react-native-chart-kit'
+import { BarChart, LineChart } from 'react-native-chart-kit'
 import { useActionSheet } from '@expo/react-native-action-sheet'
 import { useStore } from '../../store/useStore'
 import { HomeworkStatus } from '../../types'
 import { supabase } from '../../lib/supabase'
 import { Ionicons } from '@expo/vector-icons'
+import { useTheme } from '../../constants/Colors'
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; icon: string; color: string; bg: string }
-> = {
-  [HomeworkStatus.DONE]: {
-    label: 'Tamam',
-    icon: 'checkmark-circle',
-    color: '#10b981',
-    bg: '#ecfdf5',
-  },
-  [HomeworkStatus.MISSING]: {
-    label: 'Yapmadı',
-    icon: 'close-circle',
-    color: '#ef4444',
-    bg: '#fef2f2',
-  },
-  [HomeworkStatus.INCOMPLETE]: {
-    label: 'Eksik',
-    icon: 'alert-circle',
-    color: '#f59e0b',
-    bg: '#fffbeb',
-  },
-  [HomeworkStatus.ABSENT]: {
-    label: 'Gelmedi',
-    icon: 'ban',
-    color: '#8b5cf6',
-    bg: '#f5f3ff',
-  },
-  [HomeworkStatus.NOT_BROUGHT]: {
-    label: 'Getirmedi',
-    icon: 'archive',
-    color: '#3b82f6',
-    bg: '#eff6ff',
-  },
-  [HomeworkStatus.PENDING]: {
-    label: 'Bekliyor',
-    icon: 'time-outline',
-    color: '#94a3b8',
-    bg: '#f8fafc',
-  },
-}
+// Status labels will be defined inside the component to use theme colors
 
 export default function StatsScreen() {
-  const { students, homeworks, updateSubmission, addMessage, markStatusAsNotified, loadData } = useStore()
+  const theme = useTheme()
+  const STATUS_CONFIG = useMemo(() => ({
+    [HomeworkStatus.DONE]: { label: 'Tamam', icon: 'checkmark-circle', color: theme.success },
+    [HomeworkStatus.MISSING]: { label: 'Yapmadı', icon: 'close-circle', color: theme.error },
+    [HomeworkStatus.INCOMPLETE]: { label: 'Eksik', icon: 'alert-circle', color: theme.warning },
+    [HomeworkStatus.ABSENT]: { label: 'Gelmedi', icon: 'ban', color: theme.primary },
+    [HomeworkStatus.NOT_BROUGHT]: { label: 'Getirmedi', icon: 'archive', color: theme.info },
+    [HomeworkStatus.PENDING]: { label: 'Bekliyor', icon: 'time-outline', color: theme.textLight },
+  }), [theme])
+
+  const { students, homeworks, updateSubmission, addMessage, markStatusAsNotified, loadData, updateTeacherNote } = useStore()
   const [refreshing, setRefreshing] = useState(false)
   const { showActionSheetWithOptions } = useActionSheet()
   const [selectedStatus, setSelectedStatus] = useState<HomeworkStatus>(
@@ -70,6 +42,15 @@ export default function StatsScreen() {
   )
   const [search, setSearch] = useState('')
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null)
+  const [chartType, setChartType] = useState<'bar' | 'line'>('bar')
+  const [editingNote, setEditingNote] = useState<{
+    hwId: string
+    studentId: string
+    studentName: string
+    hwTitle: string
+    currentNote: string
+  } | null>(null)
+  const [tempNote, setTempNote] = useState('')
 
   const handleStatusPress = (hw: any, studentId: string) => {
     const options = [
@@ -81,12 +62,12 @@ export default function StatsScreen() {
       'İptal',
     ]
     const icons = [
-      <Ionicons name="checkmark-circle" size={24} color="#10b981" />,
-      <Ionicons name="close-circle" size={24} color="#ef4444" />,
-      <Ionicons name="alert-circle" size={24} color="#f59e0b" />,
-      <Ionicons name="ban" size={24} color="#8b5cf6" />,
-      <Ionicons name="archive" size={24} color="#3b82f6" />,
-      <Ionicons name="close-outline" size={24} color="#94a3b8" />,
+      <Ionicons name="checkmark-circle" size={24} color={theme.success} />,
+      <Ionicons name="close-circle" size={24} color={theme.error} />,
+      <Ionicons name="alert-circle" size={24} color={theme.warning} />,
+      <Ionicons name="ban" size={24} color={theme.primary} />,
+      <Ionicons name="archive" size={24} color={theme.info} />,
+      <Ionicons name="close-outline" size={24} color={theme.textLight} />,
     ]
     const cancelButtonIndex = 5
 
@@ -97,11 +78,11 @@ export default function StatsScreen() {
         cancelButtonIndex,
         containerStyle: { 
           borderRadius: 24, 
-          backgroundColor: '#ffffff',
-          paddingBottom: 20, // Alt tuşlardan uzaklaştırmak için
+          backgroundColor: theme.surface,
+          paddingBottom: 20,
         },
-        titleTextStyle: { fontWeight: '900', color: '#1e293b' },
-        textStyle: { color: '#334155', fontWeight: '600' },
+        titleTextStyle: { fontWeight: '900', color: theme.text },
+        textStyle: { color: theme.text, fontWeight: '600' },
       },
       (selectedIndex) => {
         let newStatus = null
@@ -139,7 +120,10 @@ export default function StatsScreen() {
       : (phoneDigits.length === 11 && phoneDigits.startsWith('0') ? '90' + phoneDigits.slice(1) : phoneDigits)
       
     const statusLabel = STATUS_CONFIG[selectedStatus].label.toUpperCase()
-    const text = `Merhaba, öğrenciniz ${student.name}'nin "${hw.title}" ödev durumu: ${statusLabel}. Bilginize sunarım.`
+    const teacherNote = hw.teacherNotes?.[student.id]
+    const noteText = teacherNote ? `\n\nÖğretmen Notu: ${teacherNote}` : ''
+    
+    const text = `Merhaba, öğrenciniz ${student.name}'nin "${hw.title}" ödev durumu: ${statusLabel}.${noteText}\n\nBilginize sunarım.`
     const url = `whatsapp://send?phone=${internationalPhone}&text=${encodeURIComponent(text)}`
     
     Linking.canOpenURL(url).then(supported => {
@@ -181,67 +165,136 @@ export default function StatsScreen() {
   }, [students, homeworks, selectedStatus, search])
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>İstatistikler</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.screenTitle, { color: theme.primary }]}>İstatistikler</Text>
       </View>
 
-      <View style={styles.searchSection}>
-        <Ionicons name="search-outline" size={20} color="#94a3b8" style={styles.searchIcon} />
+      <View style={[styles.searchSection, { backgroundColor: theme.surface, borderColor: theme.borderStrong }]}>
+        <Ionicons name="search-outline" size={20} color={theme.textLight} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: theme.text }]}
           placeholder="Öğrenci ara..."
+          placeholderTextColor={theme.textLight}
           value={search}
           onChangeText={setSearch}
         />
       </View>
 
-      <View style={styles.chartContainer}>
-        {(() => {
-          const stats = Object.values(HomeworkStatus).map(status => {
-            let count = 0;
-            homeworks.forEach(hw => {
-              const rel = students.filter(s => 
-                hw.targetStudentIds?.includes(s.id) || hw.targetClasses.includes(s.className)
-              );
-              rel.forEach(s => {
-                if ((hw.submissions[s.id] || HomeworkStatus.PENDING) === status) count++;
+      <View style={[styles.chartContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <View style={styles.chartHeader}>
+          <Text style={[styles.chartTitle, { color: theme.text }]}>
+            {chartType === 'bar' ? 'Durum Dağılımı' : 'Başarı Trendi (%)'}
+          </Text>
+          <View style={[styles.chartToggle, { backgroundColor: theme.background }]}>
+            <TouchableOpacity
+              onPress={() => setChartType('bar')}
+              style={[styles.toggleBtn, chartType === 'bar' && { backgroundColor: theme.primary }]}
+            >
+              <Ionicons name="bar-chart" size={14} color={chartType === 'bar' ? '#fff' : theme.textLight} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setChartType('line')}
+              style={[styles.toggleBtn, chartType === 'line' && { backgroundColor: theme.primary }]}
+            >
+              <Ionicons name="trending-up" size={14} color={chartType === 'line' ? '#fff' : theme.textLight} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {chartType === 'bar' ? (
+          (() => {
+            const stats = Object.values(HomeworkStatus).map(status => {
+              let count = 0;
+              homeworks.forEach(hw => {
+                const rel = students.filter(s => 
+                  hw.targetStudentIds?.includes(s.id) || hw.targetClasses.includes(s.className)
+                );
+                rel.forEach(s => {
+                  if ((hw.submissions[s.id] || HomeworkStatus.PENDING) === status) count++;
+                });
               });
+              return { status, count, label: STATUS_CONFIG[status].label };
             });
-            return { status, count, label: STATUS_CONFIG[status].label };
-          });
 
-          const data = {
-            labels: stats.map(s => s.label),
-            datasets: [{ data: stats.map(s => s.count) }]
-          };
+            const data = {
+              labels: stats.map(s => s.label),
+              datasets: [{ data: stats.map(s => s.count) }]
+            };
 
-          return (
-            <BarChart
-              data={data}
-              width={Dimensions.get('window').width - 32}
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
-              chartConfig={{
-                backgroundColor: '#ffffff',
-                backgroundGradientFrom: '#ffffff',
-                backgroundGradientTo: '#ffffff',
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(124, 58, 237, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                style: { borderRadius: 16 },
-                propsForDots: { r: '6', strokeWidth: '2', stroke: '#7C3AED' }
-              }}
-              verticalLabelRotation={0}
-              style={{ marginVertical: 8, borderRadius: 16 }}
-              showValuesOnTopOfBars
-            />
-          );
-        })()}
+            return (
+              <BarChart
+                data={data}
+                width={Dimensions.get('window').width - 48}
+                height={200}
+                yAxisLabel=""
+                yAxisSuffix=""
+                chartConfig={{
+                  backgroundColor: theme.surface,
+                  backgroundGradientFrom: theme.surface,
+                  backgroundGradientTo: theme.surface,
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => theme.primary + Math.round(opacity * 255).toString(16).padStart(2, '0'),
+                  labelColor: (opacity = 1) => theme.textMuted + Math.round(opacity * 255).toString(16).padStart(2, '0'),
+                  style: { borderRadius: 16 },
+                  propsForDots: { r: '6', strokeWidth: '2', stroke: theme.primary }
+                }}
+                verticalLabelRotation={0}
+                style={{ marginVertical: 8, borderRadius: 16 }}
+                showValuesOnTopOfBars
+              />
+            );
+          })()
+        ) : (
+          (() => {
+            const lastHws = [...homeworks]
+              .sort((a, b) => new Date(a.assignedDate).getTime() - new Date(b.assignedDate).getTime())
+              .slice(-6)
+
+            if (lastHws.length === 0) {
+              return <Text style={{ color: theme.textLight, padding: 40 }}>Yetersiz veri</Text>
+            }
+
+            const data = {
+              labels: lastHws.map(hw => hw.title.length > 6 ? hw.title.substring(0, 6) + '.' : hw.title),
+              datasets: [{
+                data: lastHws.map(hw => {
+                  const rel = students.filter(s => hw.targetStudentIds?.includes(s.id) || hw.targetClasses.includes(s.className))
+                  if (rel.length === 0) return 0
+                  const done = rel.filter(s => hw.submissions[s.id] === HomeworkStatus.DONE).length
+                  return Math.round((done / rel.length) * 100)
+                }),
+                color: (opacity = 1) => theme.primary,
+                strokeWidth: 3
+              }]
+            }
+
+            return (
+              <LineChart
+                data={data}
+                width={Dimensions.get('window').width - 48}
+                height={200}
+                chartConfig={{
+                  backgroundColor: theme.surface,
+                  backgroundGradientFrom: theme.surface,
+                  backgroundGradientTo: theme.surface,
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => theme.primary + Math.round(opacity * 255).toString(16).padStart(2, '0'),
+                  labelColor: (opacity = 1) => theme.textMuted + Math.round(opacity * 255).toString(16).padStart(2, '0'),
+                  style: { borderRadius: 16 },
+                  propsForDots: { r: '4', strokeWidth: '2', stroke: theme.primary },
+                  fillShadowGradient: theme.primary,
+                  fillShadowGradientOpacity: 0.1,
+                }}
+                bezier
+                style={{ marginVertical: 8, borderRadius: 16 }}
+              />
+            )
+          })()
+        )}
       </View>
 
-      <View style={styles.statsContainer}>
+      <View style={[styles.statsContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -256,12 +309,13 @@ export default function StatsScreen() {
                 key={status}
                 style={[
                   styles.statChip,
-                  isActive && { borderColor: cfg.color, backgroundColor: cfg.bg },
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                  isActive && { borderColor: cfg.color, backgroundColor: cfg.color },
                 ]}
                 onPress={() => setSelectedStatus(status)}
               >
-                <Text style={[styles.statLabel, isActive && { color: cfg.color }]}>
-                  <Ionicons name={cfg.icon as any} size={14} color={isActive ? cfg.color : '#64748b'} /> {cfg.label}
+                <Text style={[styles.statLabel, { color: theme.textMuted }, isActive && { color: '#fff' }]}>
+                  <Ionicons name={cfg.icon as any} size={14} color={isActive ? '#fff' : theme.textLight} /> {cfg.label}
                 </Text>
               </TouchableOpacity>
             )
@@ -281,15 +335,15 @@ export default function StatsScreen() {
               if (user) await loadData(user.id)
               setRefreshing(false)
             }}
-            colors={['#7C3AED']}
-            tintColor="#7C3AED"
+            colors={[theme.primary]}
+            tintColor={theme.primary}
           />
         }
       >
         {filteredStudents.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name={STATUS_CONFIG[selectedStatus].icon as any} size={64} color="#cbd5e1" />
-            <Text style={styles.emptyText}>
+            <Ionicons name={STATUS_CONFIG[selectedStatus].icon as any} size={64} color={theme.textLight} />
+            <Text style={[styles.emptyText, { color: theme.textLight }]}>
               Bu durumda öğrenci bulunamadı
             </Text>
           </View>
@@ -299,7 +353,7 @@ export default function StatsScreen() {
             const hwCount = student.statusHomeworks.length
 
             return (
-              <View key={student.id} style={styles.studentCard}>
+              <View key={student.id} style={[styles.studentCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <TouchableOpacity
                   style={styles.studentHeader}
                   onPress={() =>
@@ -307,8 +361,8 @@ export default function StatsScreen() {
                   }
                 >
                   <View style={styles.studentInfo}>
-                    <Text style={styles.studentName}>{student.name}</Text>
-                    <Text style={styles.studentMeta}>
+                    <Text style={[styles.studentName, { color: theme.text }]}>{student.name}</Text>
+                    <Text style={[styles.studentMeta, { color: theme.textMuted }]}>
                       {student.className} • {student.parentName}
                     </Text>
                   </View>
@@ -324,23 +378,24 @@ export default function StatsScreen() {
                     <Ionicons 
                       name={isExpanded ? "chevron-up" : "chevron-down"} 
                       size={16} 
-                      color="#94a3b8" 
+                      color={theme.textLight} 
                     />
                   </View>
                 </TouchableOpacity>
 
                 {isExpanded && (
-                  <View style={styles.expandedContent}>
+                  <View style={[styles.expandedContent, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
                     {student.statusHomeworks.map((hw) => {
                       const cfg = STATUS_CONFIG[selectedStatus]
+                      const hwBg = theme.isDark ? `${cfg.color}20` : `${cfg.color}15`
                       return (
                         <View
                           key={hw.id}
-                          style={[styles.hwRow, { backgroundColor: cfg.bg, borderColor: cfg.color }]}
+                          style={[styles.hwRow, { backgroundColor: hwBg, borderColor: cfg.color }]}
                         >
                           <View style={styles.hwDetails}>
                             <Text style={[styles.hwTitle, { color: cfg.color }]}>{hw.title}</Text>
-                            <Text style={styles.hwDate}>
+                            <Text style={[styles.hwDate, { color: theme.textLight }]}>
                               {new Date(hw.assignedDate).toLocaleDateString(
                                 'tr-TR',
                               )}
@@ -348,7 +403,7 @@ export default function StatsScreen() {
                           </View>
                           <View style={{ flexDirection: 'row', gap: 6 }}>
                             <TouchableOpacity
-                              style={[styles.hwActionBtn, { borderColor: cfg.color }]}
+                              style={[styles.hwActionBtn, { borderColor: cfg.color, backgroundColor: theme.surface }]}
                               onPress={() => handleStatusPress(hw, student.id)}
                             >
                               <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />
@@ -359,7 +414,7 @@ export default function StatsScreen() {
                                 <TouchableOpacity
                                   style={[
                                     styles.hwActionBtn, 
-                                    { borderColor: isNotified ? '#059669' : '#25D366' },
+                                    { borderColor: isNotified ? '#059669' : '#25D366', backgroundColor: theme.surface },
                                     isNotified && styles.hwActionBtnNotified
                                   ]}
                                   onPress={() => sendWhatsAppMessage(student, hw)}
@@ -372,6 +427,29 @@ export default function StatsScreen() {
                                 </TouchableOpacity>
                               )
                             })() : null}
+                            <TouchableOpacity
+                              style={[
+                                styles.hwActionBtn, 
+                                { borderColor: theme.primary, backgroundColor: theme.surface },
+                                hw.teacherNotes?.[student.id] && { backgroundColor: theme.primary + '15' }
+                              ]}
+                              onPress={() => {
+                                setEditingNote({
+                                  hwId: hw.id,
+                                  studentId: student.id,
+                                  studentName: student.name,
+                                  hwTitle: hw.title,
+                                  currentNote: hw.teacherNotes?.[student.id] || ''
+                                })
+                                setTempNote(hw.teacherNotes?.[student.id] || '')
+                              }}
+                            >
+                              <Ionicons 
+                                name={hw.teacherNotes?.[student.id] ? "document-text" : "document-text-outline"} 
+                                size={18} 
+                                color={theme.primary} 
+                              />
+                            </TouchableOpacity>
                           </View>
                         </View>
                       )
@@ -383,26 +461,80 @@ export default function StatsScreen() {
           })
         )}
       </ScrollView>
+
+      {/* Teacher Note Modal */}
+      <Modal
+        visible={!!editingNote}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingNote(null)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setEditingNote(null)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Öğretmen Notu</Text>
+              <TouchableOpacity onPress={() => setEditingNote(null)}>
+                <Ionicons name="close" size={24} color={theme.textLight} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalTargetInfo}>
+              <Text style={[styles.modalStudentName, { color: theme.primary }]}>{editingNote?.studentName}</Text>
+              <Text style={[styles.modalHwTitle, { color: theme.textMuted }]}>{editingNote?.hwTitle}</Text>
+            </View>
+
+            <TextInput
+              style={[
+                styles.noteInput, 
+                { 
+                  backgroundColor: theme.background, 
+                  color: theme.text,
+                  borderColor: theme.borderStrong
+                }
+              ]}
+              multiline
+              numberOfLines={4}
+              placeholder="Öğrenciye özel notunuzu buraya yazın..."
+              placeholderTextColor={theme.textLight}
+              value={tempNote}
+              onChangeText={setTempNote}
+              autoFocus
+            />
+
+            <TouchableOpacity
+              style={[styles.saveNoteBtn, { backgroundColor: theme.primary }]}
+              onPress={async () => {
+                if (editingNote) {
+                  await updateTeacherNote(editingNote.hwId, editingNote.studentId, tempNote)
+                  setEditingNote(null)
+                }
+              }}
+            >
+              <Text style={styles.saveNoteBtnText}>Notu Kaydet</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  screenTitle: { fontSize: 20, fontWeight: '900', color: '#7C3AED' },
+  screenTitle: { fontSize: 20, fontWeight: '900' },
   searchSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 12,
@@ -410,29 +542,47 @@ const styles = StyleSheet.create({
   },
   searchIcon: { marginRight: 8 },
   chartContainer: {
-    backgroundColor: '#fff',
     marginHorizontal: 16,
-    padding: 8,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
-    alignItems: 'center',
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
   },
+  chartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  chartTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  chartToggle: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 3,
+    gap: 4,
+  },
+  toggleBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   searchInput: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#1e293b',
   },
   statsContainer: {
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
     marginBottom: 8,
   },
   statsRowContent: {
@@ -445,25 +595,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 1,
   },
-  statLabel: { fontSize: 13, fontWeight: '800', color: '#64748b' },
+  statLabel: { fontSize: 13, fontWeight: '800' },
   list: { flex: 1, paddingHorizontal: 16 },
   studentCard: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     marginBottom: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#f1f5f9',
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
@@ -476,8 +622,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   studentInfo: { flex: 1 },
-  studentName: { fontSize: 16, fontWeight: '800', color: '#1e293b' },
-  studentMeta: { fontSize: 12, color: '#64748b', marginTop: 4, fontWeight: '600' },
+  studentName: { fontSize: 16, fontWeight: '800' },
+  studentMeta: { fontSize: 12, marginTop: 4, fontWeight: '600' },
   badgeContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   badge: {
     paddingHorizontal: 10,
@@ -490,9 +636,7 @@ const styles = StyleSheet.create({
   badgeText: { color: '#fff', fontSize: 13, fontWeight: '900' },
   expandedContent: {
     padding: 12,
-    backgroundColor: '#f8fafc',
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
   },
   hwRow: {
     flexDirection: 'row',
@@ -501,19 +645,17 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 14,
     borderWidth: 1,
-    backgroundColor: '#fff',
   },
   hwDetails: { flex: 1 },
   hwTitle: { fontSize: 14, fontWeight: '800' },
-  hwDate: { fontSize: 11, color: '#64748b', marginTop: 4, fontWeight: '600' },
+  hwDate: { fontSize: 11, marginTop: 4, fontWeight: '600' },
   hwActionBtn: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    borderWidth: 1.5, // Biraz daha belirgin olsun
+    borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
   },
   hwActionBtnNotified: {
     backgroundColor: '#dcfce7',
@@ -523,5 +665,61 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 80,
   },
-  emptyText: { fontSize: 16, color: '#94a3b8', fontWeight: '700', marginTop: 16 },
-})
+  emptyText: { fontSize: 16, fontWeight: '700', marginTop: 16 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  modalTargetInfo: {
+    marginBottom: 20,
+  },
+  modalStudentName: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  modalHwTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  noteInput: {
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 15,
+    height: 120,
+    textAlignVertical: 'top',
+    borderWidth: 1.5,
+    marginBottom: 20,
+  },
+  saveNoteBtn: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  saveNoteBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+});

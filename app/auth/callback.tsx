@@ -3,8 +3,10 @@ import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { useStore } from '../../store/useStore';
+import { useTheme } from '../../constants/Colors';
 
 export default function AuthCallback() {
+  const theme = useTheme();
   const router = useRouter();
   const loadData = useStore((s) => s.loadData);
 
@@ -44,9 +46,9 @@ export default function AuthCallback() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#7C3AED" />
-      <Text style={styles.text}>Oturum açılıyor...</Text>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <ActivityIndicator size="large" color={theme.primary} />
+      <Text style={[styles.text, { color: theme.textMuted }]}>Oturum açılıyor...</Text>
     </View>
   );
 }
@@ -56,12 +58,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   text: {
     marginTop: 12,
     fontSize: 16,
-    color: '#64748b',
     fontWeight: '600',
   },
 });

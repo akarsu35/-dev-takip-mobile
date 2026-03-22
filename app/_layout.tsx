@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { useStore } from '../store/useStore'
 import React from 'react'
+import { useTheme } from '../constants/Colors'
 
 // Login ekranı kendi navigation'ını yönetirken _layout'un müdahale etmesini engeller
 export const suppressAuthNav = { current: false }
@@ -49,10 +50,13 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const theme = useTheme()
+  const isDark = theme.isDark
+
   return (
     <ActionSheetProvider>
       <AuthProvider>
-        <StatusBar style="dark" />
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(auth)" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

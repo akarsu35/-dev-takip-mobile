@@ -24,9 +24,11 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { generateHomeworkReport } from '../../utils/PdfService'
 import { HomeworkCard } from '../../components/HomeworkCard'
 import { STATUS_LABELS } from '../../components/StatusBadge'
+import { useTheme } from '../../constants/Colors'
 
 export default function HomeworkScreen() {
   const router = useRouter()
+  const theme = useTheme()
   const { 
     students, 
     homeworks, 
@@ -194,38 +196,38 @@ export default function HomeworkScreen() {
   }, [bildirHw, students])
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {isLoading && !refreshing ? (
-        <ActivityIndicator style={{ flex: 1 }} size="large" color="#7C3AED" />
+        <ActivityIndicator style={{ flex: 1 }} size="large" color={theme.primary} />
       ) : (
         <>
-          <View style={styles.header}>
-            <Text style={styles.screenTitle}>📚 Ödevler</Text>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.screenTitle, { color: theme.primary }]}>📚 Ödevler</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity 
-                style={[styles.addBtn, { backgroundColor: '#f1f5f9' }]} 
+                style={[styles.addBtn, { backgroundColor: theme.background, borderColor: theme.borderStrong, borderWidth: 1 }]} 
                 onPress={() => setShowSelectionModal(true)}
               >
-                <Ionicons name="share-social-outline" size={16} color="#475569" />
+                <Ionicons name="share-social-outline" size={16} color={theme.textMuted} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.addBtn} onPress={() => setShowForm(true)}>
+              <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} onPress={() => setShowForm(true)}>
                 <Text style={styles.addBtnText}>+ Yeni Ödev</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.searchContainer}>
-            <Ionicons name="search-outline" size={20} color="#94a3b8" />
+          <View style={[styles.searchContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <Ionicons name="search-outline" size={20} color={theme.textLight} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.text }]}
               placeholder="Ödev ara..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.textLight}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity onPress={() => setSearchQuery('')}>
-                <Ionicons name="close-circle" size={18} color="#94a3b8" />
+                <Ionicons name="close-circle" size={18} color={theme.textLight} />
               </TouchableOpacity>
             )}
           </View>
@@ -242,8 +244,8 @@ export default function HomeworkScreen() {
                   if (user) await loadData(user.id)
                   setRefreshing(false)
                 }}
-                colors={['#7C3AED']}
-                tintColor="#7C3AED"
+                colors={[theme.primary]}
+                tintColor={theme.primary}
               />
             }
           >
@@ -273,7 +275,7 @@ export default function HomeworkScreen() {
 
       {/* Bildir Modal (Birebir Tasarım) */}
       <Modal visible={!!bildirHw} animationType="slide" presentationStyle="fullScreen">
-        <View style={{ flex: 1, backgroundColor: '#f8fafc' }}>
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
           <LinearGradient colors={['#7C3AED', '#4F46E5']} style={styles.bildirTop}>
             <View style={styles.bildirHeaderRow}>
               <View style={{ flex: 1 }}>
@@ -296,31 +298,31 @@ export default function HomeworkScreen() {
                const pct = rel.length > 0 ? Math.round((done / rel.length) * 100) : 0
                return (
                 <View style={styles.statCardsRow}>
-                  <View style={styles.statCard}>
+                  <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                     <View style={[styles.cardTag, { marginBottom: 12 }]}>
-                      <Ionicons name="calendar" size={12} color="#7C3AED" />
-                      <Text style={styles.cardTagText}> TARİHLER</Text>
+                      <Ionicons name="calendar" size={12} color={theme.primary} />
+                      <Text style={[styles.cardTagText, { color: theme.textMuted }]}> TARİHLER</Text>
                     </View>
                     <View style={styles.statLine}>
-                      <Text style={styles.statKey}>Veriliş:</Text>
-                      <Text style={styles.statVal}>{new Date(currentHwInModal.assignedDate).toLocaleDateString('tr-TR')}</Text>
+                      <Text style={[styles.statKey, { color: theme.textMuted }]}>Veriliş:</Text>
+                      <Text style={[styles.statVal, { color: theme.text }]}>{new Date(currentHwInModal.assignedDate).toLocaleDateString('tr-TR')}</Text>
                     </View>
                     <View style={styles.statLine}>
-                      <Text style={styles.statKey}>Kontrol:</Text>
-                      <Text style={[styles.statVal, { color: '#7C3AED', fontWeight: '800' }]}>{new Date(currentHwInModal.dueDate).toLocaleDateString('tr-TR')}</Text>
+                      <Text style={[styles.statKey, { color: theme.textMuted }]}>Kontrol:</Text>
+                      <Text style={[styles.statVal, { color: theme.primary, fontWeight: '800' }]}>{new Date(currentHwInModal.dueDate).toLocaleDateString('tr-TR')}</Text>
                     </View>
                   </View>
 
-                  <View style={styles.statCard}>
+                  <View style={[styles.statCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                     <View style={styles.statCardHeader}>
-                      <Text style={styles.cardTagText}>İLERLEME DURUMU</Text>
-                      <Text style={styles.pctText}>%{pct}</Text>
+                      <Text style={[styles.cardTagText, { color: theme.textMuted }]}>İLERLEME DURUMU</Text>
+                      <Text style={[styles.pctText, { color: theme.primary }]}>%{pct}</Text>
                     </View>
-                    <Text style={styles.progressCounter}>
+                    <Text style={[styles.progressCounter, { color: theme.text }]}>
                       {done} / {rel.length}
                     </Text>
-                    <View style={styles.pBar}>
-                       <View style={[styles.pFill, { width: `${pct}%` as any }]} />
+                    <View style={[styles.pBar, { backgroundColor: theme.border }]}>
+                       <View style={[styles.pFill, { width: `${pct}%` as any, backgroundColor: theme.primary }]} />
                     </View>
                   </View>
                 </View>
@@ -328,15 +330,15 @@ export default function HomeworkScreen() {
             })()}
 
             {/* Description */}
-            <View style={styles.descBlock}>
-              <Text style={styles.cardTagText}>ÖDEV AÇIKLAMASI</Text>
-              <Text style={styles.descContent}>"{bildirHw?.description || 'Açıklama belirtilmemiş'}"</Text>
+            <View style={[styles.descBlock, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+              <Text style={[styles.cardTagText, { color: theme.textMuted }]}>ÖDEV AÇIKLAMASI</Text>
+              <Text style={[styles.descContent, { color: theme.textMuted }]}>"{bildirHw?.description || 'Açıklama belirtilmemiş'}"</Text>
             </View>
 
             {/* Student List */}
             <View style={styles.studentHeader}>
-              <Ionicons name="people" size={16} color="#7C3AED" />
-              <Text style={styles.studentLabel}> ÖĞRENCİ LİSTESİ ({bildirStudents.length})</Text>
+              <Ionicons name="people" size={16} color={theme.primary} />
+              <Text style={[styles.studentLabel, { color: theme.textMuted }]}> ÖĞRENCİ LİSTESİ ({bildirStudents.length})</Text>
             </View>
 
             {bildirStudents.map((s) => {
@@ -346,31 +348,32 @@ export default function HomeworkScreen() {
               const hasPhone = !!s.parentPhone
 
               return (
-              <View key={s.id} style={styles.studentCard}>
+              <View key={s.id} style={[styles.studentCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.sName}>{s.name.toUpperCase()}</Text>
-                  <Text style={styles.sMeta}>{s.className} • {s.parentName?.toUpperCase() || 'VELİ BELİRTİLMEMİŞ'}</Text>
+                  <Text style={[styles.sName, { color: theme.text }]}>{s.name.toUpperCase()}</Text>
+                  <Text style={[styles.sMeta, { color: theme.textLight }]}>{s.className} • {s.parentName?.toUpperCase() || 'VELİ BELİRTİLMEMİŞ'}</Text>
                 </View>
                 <TouchableOpacity 
                    style={[
                      styles.wpBtn, 
+                     { backgroundColor: theme.success, shadowColor: theme.success },
                      !hasPhone && { opacity: 0.5 },
-                     alreadyNotified && { backgroundColor: '#f1f5f9', shadowOpacity: 0 }
+                     alreadyNotified && { backgroundColor: theme.overlay, shadowOpacity: 0 }
                    ]} 
                    onPress={() => handleSendWA(currentHwInModal, s.id)}
                    disabled={!hasPhone || alreadyNotified}
                 >
-                  <Ionicons name={alreadyNotified ? "checkmark-circle" : "logo-whatsapp"} size={16} color={alreadyNotified ? "#94a3b8" : "#fff"} />
-                  <Text style={[styles.wpBtnText, alreadyNotified && { color: '#94a3b8' }]}>{alreadyNotified ? 'BİLDİRİLDİ' : 'BİLDİR'}</Text>
+                  <Ionicons name={alreadyNotified ? "checkmark-circle" : "logo-whatsapp"} size={16} color={alreadyNotified ? theme.textLight : "#fff"} />
+                  <Text style={[styles.wpBtnText, alreadyNotified && { color: theme.textLight }]}>{alreadyNotified ? 'BİLDİRİLDİ' : 'BİLDİR'}</Text>
                 </TouchableOpacity>
               </View>
               )
             })}
           </ScrollView>
 
-          <View style={styles.bildirFooter}>
+          <View style={[styles.bildirFooter, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
             <TouchableOpacity style={styles.vazgec} onPress={() => setBildirHw(null)}>
-              <Text style={styles.vazgecText}>Vazgeç</Text>
+              <Text style={[styles.vazgecText, { color: theme.textMuted }]}>Vazgeç</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.tamamla} onPress={() => setBildirHw(null)}>
               <Text style={styles.tamamlaText}>TAMAMLA</Text>
@@ -381,12 +384,12 @@ export default function HomeworkScreen() {
 
       {/* Rapor Seçim Modalı */}
       <Modal visible={showSelectionModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.modal}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modal, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity onPress={() => setShowSelectionModal(false)}>
-              <Text style={styles.modalCancel}>Kapat</Text>
+              <Text style={[styles.modalCancel, { color: theme.textLight }]}>Kapat</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Rapor Hazırla</Text>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Rapor Hazırla</Text>
             <TouchableOpacity 
               onPress={async () => {
                 try {
@@ -426,10 +429,18 @@ export default function HomeworkScreen() {
               {['ALL', ...existingClasses].map((cls) => (
                 <TouchableOpacity
                   key={cls}
-                  style={[styles.reportFilterChip, reportClassFilter === cls && styles.reportFilterChipActive]}
+                  style={[
+                    styles.reportFilterChip, 
+                    { backgroundColor: theme.surface, borderColor: theme.border },
+                    reportClassFilter === cls && { backgroundColor: theme.primary, borderColor: theme.primary }
+                  ]}
                   onPress={() => setReportClassFilter(cls)}
                 >
-                  <Text style={[styles.reportFilterText, reportClassFilter === cls && styles.reportFilterTextActive]}>
+                  <Text style={[
+                    styles.reportFilterText, 
+                    { color: theme.textMuted },
+                    reportClassFilter === cls && { color: '#fff' }
+                  ]}>
                     {cls === 'ALL' ? 'Tümü' : cls}
                   </Text>
                 </TouchableOpacity>
@@ -438,7 +449,7 @@ export default function HomeworkScreen() {
           </View>
 
           <ScrollView style={styles.modalBody}>
-            <Text style={styles.fieldLabel}>ÖĞRENCİ SEÇİMİ ({selectedReportStudentIds.length === 0 ? 'Tümü' : `${selectedReportStudentIds.length} Seçili`})</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textLight }]}>ÖĞRENCİ SEÇİMİ ({selectedReportStudentIds.length === 0 ? 'Tümü' : `${selectedReportStudentIds.length} Seçili`})</Text>
             <View style={styles.studentSelector}>
               {students
                 .filter(s => reportClassFilter === 'ALL' || s.className === reportClassFilter)
@@ -448,7 +459,11 @@ export default function HomeworkScreen() {
                   return (
                     <View key={s.id} style={styles.reportStudentRow}>
                       <TouchableOpacity
-                        style={[styles.studentChipInReport, isSelected && styles.studentChipActive]}
+                        style={[
+                          styles.studentChipInReport, 
+                          { backgroundColor: theme.surface, borderColor: theme.borderStrong },
+                          isSelected && { backgroundColor: theme.primaryLight, borderColor: theme.primary }
+                        ]}
                         onPress={() => {
                           setSelectedReportStudentIds(prev => 
                             prev.includes(s.id) ? prev.filter(id => id !== s.id) : [...prev, s.id]
@@ -458,14 +473,18 @@ export default function HomeworkScreen() {
                         <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
                           {isSelected && <Ionicons name="checkmark" size={10} color="#fff" />}
                         </View>
-                        <Text style={[styles.studentChipText, isSelected && styles.studentChipTextActive]} numberOfLines={1}>
+                        <Text style={[
+                          styles.studentChipText, 
+                          { color: theme.textMuted },
+                          isSelected && { color: theme.text, fontWeight: '700' }
+                        ]} numberOfLines={1}>
                           {s.name} ({s.className})
                         </Text>
                       </TouchableOpacity>
                       
                       {s.parentPhone && (
                         <TouchableOpacity 
-                          style={styles.modalWaBtn}
+                          style={[styles.modalWaBtn, { backgroundColor: theme.overlay, borderColor: theme.border }]}
                           onPress={() => handleShareIndividualReport(s)}
                         >
                           <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
@@ -482,46 +501,56 @@ export default function HomeworkScreen() {
 
       {/* Form Modal */}
       <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.modal}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modal, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity onPress={() => { setShowForm(false); resetForm(); }}>
-              <Text style={styles.modalCancel}>İptal</Text>
+              <Text style={[styles.modalCancel, { color: theme.textLight }]}>İptal</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>{editingHw ? 'Ödevi Düzenle' : 'Yeni Ödev'}</Text>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>{editingHw ? 'Ödevi Düzenle' : 'Yeni Ödev'}</Text>
             <TouchableOpacity onPress={handleSubmit}>
               <Text style={styles.modalSave}>Kaydet</Text>
             </TouchableOpacity>
           </View>
           
           <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
-            <Text style={styles.fieldLabel}>ÖDEV BAŞLIĞI</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textLight }]}>ÖDEV BAŞLIĞI</Text>
             <TextInput
-              style={styles.fieldInput}
+              style={[styles.fieldInput, { backgroundColor: theme.surface, borderColor: theme.borderStrong, color: theme.text }]}
               value={title}
               onChangeText={setTitle}
               placeholder="Örn: Kareköklü Sayılar Test-1"
+              placeholderTextColor={theme.textLight}
             />
 
-            <Text style={styles.fieldLabel}>AÇIKLAMA (OPSİYONEL)</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textLight }]}>AÇIKLAMA (OPSİYONEL)</Text>
             <TextInput
-              style={[styles.fieldInput, { height: 80, textAlignVertical: 'top' }]}
+              style={[styles.fieldInput, { height: 80, textAlignVertical: 'top', backgroundColor: theme.surface, borderColor: theme.borderStrong, color: theme.text }]}
               value={description}
               onChangeText={setDescription}
               placeholder="Ödev detayları..."
+              placeholderTextColor={theme.textLight}
               multiline
             />
 
-            <Text style={styles.fieldLabel}>SINIF SEÇİMİ</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textLight }]}>SINIF SEÇİMİ</Text>
             <View style={styles.classSelector}>
               {existingClasses.map(cls => {
                 const isSelected = selectedClasses.includes(cls)
                 return (
                   <TouchableOpacity
                     key={cls}
-                    style={[styles.classChip, isSelected && styles.classChipActive]}
+                    style={[
+                      styles.classChip, 
+                      { backgroundColor: theme.surface, borderColor: theme.borderStrong },
+                      isSelected && { backgroundColor: theme.primary, borderColor: theme.primary }
+                    ]}
                     onPress={() => toggleClass(cls)}
                   >
-                    <Text style={[styles.classChipText, isSelected && styles.classChipTextActive]}>{cls}</Text>
+                    <Text style={[
+                      styles.classChipText, 
+                      { color: theme.textMuted },
+                      isSelected && { color: '#fff' }
+                    ]}>{cls}</Text>
                   </TouchableOpacity>
                 )
               })}
@@ -529,7 +558,7 @@ export default function HomeworkScreen() {
 
             {selectedClasses.length > 0 && (
               <>
-                <Text style={styles.fieldLabel}>
+                <Text style={[styles.fieldLabel, { color: theme.textLight }]}>
                   ÖĞRENCİ SEÇİMİ (İSTEĞE BAĞLI - BOŞSA TÜM SINIF)
                 </Text>
                 <View style={styles.studentSelector}>
@@ -538,13 +567,21 @@ export default function HomeworkScreen() {
                     return (
                       <TouchableOpacity
                         key={s.id}
-                        style={[styles.studentChip, isSelected && styles.studentChipActive]}
+                        style={[
+                          styles.studentChip, 
+                          { backgroundColor: theme.surface, borderColor: theme.borderStrong },
+                          isSelected && { backgroundColor: theme.primaryLight, borderColor: theme.primary }
+                        ]}
                         onPress={() => toggleStudent(s.id)}
                       >
-                        <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
+                        <View style={[styles.checkbox, isSelected && { backgroundColor: theme.primary, borderColor: theme.primary }]}>
                           {isSelected && <Ionicons name="checkmark" size={10} color="#fff" />}
                         </View>
-                        <Text style={[styles.studentChipText, isSelected && styles.studentChipTextActive]}>
+                        <Text style={[
+                          styles.studentChipText, 
+                          { color: theme.textMuted },
+                          isSelected && { color: theme.text, fontWeight: '700' }
+                        ]}>
                           {s.name} ({s.className})
                         </Text>
                       </TouchableOpacity>
@@ -554,10 +591,10 @@ export default function HomeworkScreen() {
               </>
             )}
 
-            <Text style={styles.fieldLabel}>SON TESLİM TARİHİ</Text>
-            <TouchableOpacity style={styles.datePickerBtn} onPress={() => setShowDatePicker(true)}>
-              <Ionicons name="calendar" size={20} color="#7C3AED" style={{ marginRight: 8 }} />
-              <Text style={styles.datePickerText}>{dueDate.toLocaleDateString('tr-TR')}</Text>
+            <Text style={[styles.fieldLabel, { color: theme.textLight }]}>SON TESLİM TARİHİ</Text>
+            <TouchableOpacity style={[styles.datePickerBtn, { backgroundColor: theme.surface, borderColor: theme.borderStrong }]} onPress={() => setShowDatePicker(true)}>
+              <Ionicons name="calendar" size={20} color={theme.primary} style={{ marginRight: 8 }} />
+              <Text style={[styles.datePickerText, { color: theme.text }]}>{dueDate.toLocaleDateString('tr-TR')}</Text>
             </TouchableOpacity>
 
             {showDatePicker && (

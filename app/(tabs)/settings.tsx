@@ -11,14 +11,19 @@ import {
 } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useTheme } from '../../constants/Colors'
+import { useStore } from '../../store/useStore'
+import { Ionicons } from '@expo/vector-icons'
 
 export default function SettingsScreen() {
+  const theme = useTheme()
   const [fullName, setFullName] = useState('')
   const [schoolName, setSchoolName] = useState('')
   const [subject, setSubject] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const { themePreference, setThemePreference } = useStore()
 
   useEffect(() => {
     loadProfile()
@@ -86,33 +91,33 @@ export default function SettingsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator style={{ flex: 1 }} color="#4F46E5" />
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <ActivityIndicator style={{ flex: 1 }} color={theme.primary} />
       </SafeAreaView>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>⚙️ Ayarlar</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.screenTitle, { color: theme.primary }]}>⚙️ Ayarlar</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarLarge}>
+        <View style={[styles.profileCard, { backgroundColor: theme.surface }]}>
+          <View style={[styles.avatarLarge, { backgroundColor: theme.primary }]}>
             <Text style={styles.avatarText}>
               {fullName ? fullName[0].toUpperCase() : '?'}
             </Text>
           </View>
-          <Text style={styles.userName}>{fullName || 'İsim Girilmemiş'}</Text>
-          <Text style={styles.userEmail}>{userEmail}</Text>
+          <Text style={[styles.userName, { color: theme.text }]}>{fullName || 'İsim Girilmemiş'}</Text>
+          <Text style={[styles.userEmail, { color: theme.textMuted }]}>{userEmail}</Text>
         </View>
 
         {/* Profile Form */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Profil Bilgileri</Text>
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Profil Bilgileri</Text>
           {[
             {
               label: 'AD SOYAD',
@@ -134,18 +139,19 @@ export default function SettingsScreen() {
             },
           ].map(({ label, val, setVal, placeholder }) => (
             <View key={label} style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>{label}</Text>
+              <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>{label}</Text>
               <TextInput
-                style={styles.fieldInput}
+                style={[styles.fieldInput, { backgroundColor: theme.background, borderColor: theme.borderStrong, color: theme.text }]}
                 value={val}
                 onChangeText={setVal}
                 placeholder={placeholder}
+                placeholderTextColor={theme.textLight}
               />
             </View>
           ))}
 
           <TouchableOpacity
-            style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
+            style={[styles.saveBtn, { backgroundColor: theme.primary, shadowColor: theme.primary }, saving && styles.saveBtnDisabled]}
             onPress={handleSave}
             disabled={saving}
           >
@@ -157,24 +163,61 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* App Info */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Uygulama</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Versiyon</Text>
-            <Text style={styles.infoValue}>1.0.0</Text>
+        {/* Appearance Control */}
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Görünüm Teması</Text>
+          <View style={styles.themeToggleContainer}>
+            {[
+              { id: 'light', label: 'Açık', icon: 'sunny-outline' },
+              { id: 'dark', label: 'Koyu', icon: 'moon-outline' },
+              { id: 'system', label: 'Sistem', icon: 'settings-outline' },
+            ].map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={[
+                  styles.themeOption,
+                  { backgroundColor: theme.background, borderColor: theme.borderStrong },
+                  themePreference === item.id && { backgroundColor: theme.primary, borderColor: theme.primary },
+                ]}
+                onPress={() => setThemePreference(item.id as any)}
+              >
+                <Ionicons
+                  name={item.icon as any}
+                  size={18}
+                  color={themePreference === item.id ? '#fff' : theme.textMuted}
+                />
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    { color: theme.textMuted },
+                    themePreference === item.id && { color: '#fff' },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Plan</Text>
-            <View style={styles.premiumBadge}>
-              <Text style={styles.premiumBadgeText}>⭐ Premium</Text>
+        </View>
+
+        {/* App Info */}
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Uygulama</Text>
+          <View style={[styles.infoRow, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Versiyon</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>1.0.0</Text>
+          </View>
+          <View style={[styles.infoRow, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.infoLabel, { color: theme.textMuted }]}>Plan</Text>
+            <View style={[styles.premiumBadge, { backgroundColor: theme.warning + '20' }]}>
+              <Text style={[styles.premiumBadgeText, { color: theme.warning }]}>⭐ Premium</Text>
             </View>
           </View>
         </View>
 
         {/* Logout */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutBtnText}>🚪 Çıkış Yap</Text>
+        <TouchableOpacity style={[styles.logoutBtn, { backgroundColor: theme.danger + '10', borderColor: theme.danger + '30' }]} onPress={handleLogout}>
+          <Text style={[styles.logoutBtnText, { color: theme.danger }]}>🚪 Çıkış Yap</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -182,22 +225,19 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  screenTitle: { fontSize: 20, fontWeight: '900', color: '#4F46E5' },
+  screenTitle: { fontSize: 20, fontWeight: '900' },
   profileCard: {
     alignItems: 'center',
-    backgroundColor: '#fff',
     margin: 16,
     borderRadius: 20,
     padding: 24,
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -207,21 +247,19 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#4F46E5',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 12,
   },
   avatarText: { color: '#fff', fontWeight: '900', fontSize: 28 },
-  userName: { fontSize: 18, fontWeight: '800', color: '#1e293b' },
-  userEmail: { fontSize: 13, color: '#94a3b8', marginTop: 4 },
+  userName: { fontSize: 18, fontWeight: '800' },
+  userEmail: { fontSize: 13, marginTop: 4 },
   section: {
-    backgroundColor: '#fff',
     margin: 16,
     marginTop: 0,
     borderRadius: 20,
     padding: 20,
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
@@ -230,33 +268,26 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#1e293b',
     marginBottom: 16,
   },
   fieldGroup: { marginBottom: 14 },
   fieldLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#94a3b8',
     letterSpacing: 1.5,
     marginBottom: 6,
   },
   fieldInput: {
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 12,
     padding: 13,
     fontSize: 15,
-    color: '#1e293b',
-    backgroundColor: '#f8fafc',
   },
   saveBtn: {
-    backgroundColor: '#4F46E5',
     borderRadius: 12,
     padding: 15,
     alignItems: 'center',
     marginTop: 4,
-    shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -270,26 +301,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  infoLabel: { fontSize: 14, color: '#64748b', fontWeight: '600' },
-  infoValue: { fontSize: 14, color: '#1e293b', fontWeight: '700' },
+  infoLabel: { fontSize: 14, fontWeight: '600' },
+  infoValue: { fontSize: 14, fontWeight: '700' },
   premiumBadge: {
-    backgroundColor: '#FEF3C7',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 10,
   },
-  premiumBadgeText: { color: '#d97706', fontWeight: '800', fontSize: 13 },
+  premiumBadgeText: { fontWeight: '800', fontSize: 13 },
   logoutBtn: {
     margin: 16,
     marginTop: 0,
-    backgroundColor: '#FEF2F2',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fee2e2',
   },
-  logoutBtnText: { color: '#ef4444', fontSize: 15, fontWeight: '800' },
-})
+  logoutBtnText: { fontSize: 15, fontWeight: '800' },
+  themeToggleContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    gap: 8,
+  },
+  themeOptionText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+});

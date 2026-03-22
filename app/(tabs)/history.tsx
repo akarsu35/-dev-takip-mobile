@@ -17,17 +17,18 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useActionSheet } from '@expo/react-native-action-sheet'
 import { generateHomeworkReport } from '../../utils/PdfService'
-
-const STATUS_LABELS = {
-  [HomeworkStatus.DONE]: { label: 'Tamam', color: '#10b981', icon: 'checkmark-circle' },
-  [HomeworkStatus.MISSING]: { label: 'Yapmadı', color: '#ef4444', icon: 'close-circle' },
-  [HomeworkStatus.INCOMPLETE]: { label: 'Eksik', color: '#f59e0b', icon: 'alert-circle' },
-  [HomeworkStatus.ABSENT]: { label: 'Gelmedi', color: '#8b5cf6', icon: 'ban' },
-  [HomeworkStatus.NOT_BROUGHT]: { label: 'Getirmedi', color: '#3b82f6', icon: 'archive' },
-  [HomeworkStatus.PENDING]: { label: 'Bekliyor', color: '#94a3b8', icon: 'time-outline' },
-}
+import { useTheme } from '../../constants/Colors'
 
 export default function HistoryScreen() {
+  const theme = useTheme()
+  const STATUS_LABELS = useMemo(() => ({
+    [HomeworkStatus.DONE]: { label: 'Tamam', color: theme.success, icon: 'checkmark-circle' },
+    [HomeworkStatus.MISSING]: { label: 'Yapmadı', color: theme.error, icon: 'close-circle' },
+    [HomeworkStatus.INCOMPLETE]: { label: 'Eksik', color: theme.warning, icon: 'alert-circle' },
+    [HomeworkStatus.ABSENT]: { label: 'Gelmedi', color: theme.primary, icon: 'ban' },
+    [HomeworkStatus.NOT_BROUGHT]: { label: 'Getirmedi', color: theme.info, icon: 'archive' },
+    [HomeworkStatus.PENDING]: { label: 'Bekliyor', color: theme.textMuted, icon: 'time-outline' },
+  }), [theme])
   const { students, homeworks, isLoading, addMessage, markStatusAsNotified } = useStore()
   const { showActionSheetWithOptions } = useActionSheet()
   const { studentId: paramStudentId } = useLocalSearchParams<{ studentId?: string }>()
@@ -84,28 +85,28 @@ export default function HistoryScreen() {
 
   // --- RENDER ---
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {isLoading ? (
         <>
-          <View style={styles.header}>
-            <Text style={styles.screenTitle}>Yükleniyor...</Text>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.screenTitle, { color: theme.text }]}>Yükleniyor...</Text>
           </View>
-          <ActivityIndicator style={{ flex: 1 }} size="large" color="#7C3AED" />
+          <ActivityIndicator style={{ flex: 1 }} size="large" color={theme.primary} />
         </>
       ) : selectedStudent && stats ? (
         <>
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity onPress={() => {
               setSelectedStudentId(null)
               setFilterStatus('ALL')
             }}>
-              <Ionicons name="chevron-back" size={24} color="#7C3AED" />
+              <Ionicons name="chevron-back" size={24} color={theme.primary} />
             </TouchableOpacity>
             <View style={styles.studentHeaderInfo}>
-              <Text style={styles.studentName} numberOfLines={1}>
+              <Text style={[styles.studentName, { color: theme.text }]} numberOfLines={1}>
                 {selectedStudent.name}
               </Text>
-              <Text style={styles.studentClass}>{selectedStudent.className}</Text>
+              <Text style={[styles.studentClass, { color: theme.textMuted }]}>{selectedStudent.className}</Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity
@@ -118,7 +119,7 @@ export default function HistoryScreen() {
                   }
                 }}
               >
-                <Ionicons name="share-outline" size={24} color="#7C3AED" />
+                <Ionicons name="share-outline" size={24} color={theme.primary} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
@@ -127,17 +128,18 @@ export default function HistoryScreen() {
                   }
                 }}
               >
-                <Ionicons name="call-outline" size={24} color="#7C3AED" />
+                <Ionicons name="call-outline" size={24} color={theme.primary} />
               </TouchableOpacity>
             </View>
           </View>
 
-          <View style={styles.statsContainer}>
+          <View style={[styles.statsContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsRowContent}>
-              <View style={[styles.statChip, { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' }]}>
-                <Text style={[styles.statLabel, { color: '#7C3AED' }]}>BAŞARI</Text>
-                <Text style={[styles.statCount, { color: '#7C3AED' }]}>%{successRate}</Text>
+              <View style={[styles.statChip, { backgroundColor: theme.primaryLight, borderColor: theme.borderStrong }]}>
+                <Text style={[styles.statLabel, { color: theme.primary }]}>BAŞARI</Text>
+                <Text style={[styles.statCount, { color: theme.primary }]}>%{successRate}</Text>
               </View>
+
 
               {stats.map(({ status, count }) => {
                 const cfg = STATUS_LABELS[status]
@@ -147,14 +149,15 @@ export default function HistoryScreen() {
                     key={status}
                     style={[
                       styles.statChip,
+                      { backgroundColor: theme.surface, borderColor: theme.border },
                       isActive && { backgroundColor: cfg.color, borderColor: cfg.color },
                     ]}
                     onPress={() => setFilterStatus(filterStatus === status ? 'ALL' : status)}
                   >
-                    <Text style={[styles.statLabel, isActive && { color: '#fff' }]}>
+                    <Text style={[styles.statLabel, { color: theme.textMuted }, isActive && { color: '#fff' }]}>
                       {cfg.label}
                     </Text>
-                    <Text style={[styles.statCount, isActive && { color: '#fff' }]}>{count}</Text>
+                    <Text style={[styles.statCount, { color: theme.text }, isActive && { color: '#fff' }]}>{count}</Text>
                   </TouchableOpacity>
                 )
               })}
@@ -177,7 +180,9 @@ export default function HistoryScreen() {
                 showActionSheetWithOptions({
                     options,
                     cancelButtonIndex: 0,
-                    containerStyle: { borderRadius: 24, backgroundColor: '#ffffff', paddingBottom: 20 },
+                    containerStyle: { borderRadius: 24, backgroundColor: theme.surface, paddingBottom: 20 },
+                    titleTextStyle: { color: theme.text },
+                    messageTextStyle: { color: theme.textMuted },
                 }, (index) => {
                     let newStat: HomeworkStatus | null = null
                     if (index === 1) newStat = HomeworkStatus.DONE
@@ -194,10 +199,10 @@ export default function HistoryScreen() {
               }
 
               return (
-                <View key={hw.id} style={styles.hwRow}>
+                <View key={hw.id} style={[styles.hwRow, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.hwTitle}>{hw.title}</Text>
-                    <Text style={styles.hwDate}>{new Date(hw.assignedDate).toLocaleDateString('tr-TR')}</Text>
+                    <Text style={[styles.hwTitle, { color: theme.text }]}>{hw.title}</Text>
+                    <Text style={[styles.hwDate, { color: theme.textLight }]}>{new Date(hw.assignedDate).toLocaleDateString('tr-TR')}</Text>
                   </View>
                   <TouchableOpacity onPress={handleStatusPress} style={[styles.statusBadge, { backgroundColor: cfg.color + '20' }]}>
                     <Ionicons name={cfg.icon as any} size={16} color={cfg.color} />
@@ -210,12 +215,12 @@ export default function HistoryScreen() {
         </>
       ) : (
         <>
-          <View style={styles.header}>
-            <Text style={styles.screenTitle}>Gelişim Takibi</Text>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.screenTitle, { color: theme.primary }]}>Gelişim Takibi</Text>
           </View>
-          <View style={styles.searchSection}>
-            <Ionicons name="search-outline" size={20} color="#94a3b8" style={styles.searchIcon} />
-            <TextInput style={styles.searchInput} placeholder="Öğrenci ara..." value={search} onChangeText={setSearch} />
+          <View style={[styles.searchSection, { backgroundColor: theme.surface, borderColor: theme.borderStrong }]}>
+            <Ionicons name="search-outline" size={20} color={theme.textLight} style={styles.searchIcon} />
+            <TextInput style={[styles.searchInput, { color: theme.text }]} placeholder="Öğrenci ara..." placeholderTextColor={theme.textLight} value={search} onChangeText={setSearch} />
           </View>
           <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 16 }}>
             {students.filter(s => s.name.toLowerCase().includes(search.toLowerCase())).map(s => {
@@ -223,15 +228,15 @@ export default function HistoryScreen() {
                 const done = relevant.filter(h => h.submissions[s.id] === HomeworkStatus.DONE).length
                 const rate = relevant.length > 0 ? Math.round((done / relevant.length) * 100) : 0
                 return (
-                  <TouchableOpacity key={s.id} style={styles.studentRow} onPress={() => setSelectedStudentId(s.id)}>
-                    <View style={[styles.avatar, { backgroundColor: rate >= 70 ? '#10b981' : rate >= 40 ? '#f59e0b' : '#ef4444' }]}>
+                  <TouchableOpacity key={s.id} style={[styles.studentRow, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => setSelectedStudentId(s.id)}>
+                    <View style={[styles.avatar, { backgroundColor: rate >= 70 ? theme.success : rate >= 40 ? theme.warning : theme.danger }]}>
                       <Text style={styles.avatarText}>{s.name[0]}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.studentName}>{s.name}</Text>
-                      <Text style={styles.studentMeta}>{s.className} • {relevant.length} ödev</Text>
+                      <Text style={[styles.studentName, { color: theme.text }]}>{s.name}</Text>
+                      <Text style={[styles.studentMeta, { color: theme.textMuted }]}>{s.className} • {relevant.length} ödev</Text>
                     </View>
-                    <Text style={[styles.rate, { color: rate >= 70 ? '#10b981' : rate >= 40 ? '#f59e0b' : '#ef4444' }]}>{rate}%</Text>
+                    <Text style={[styles.rate, { color: rate >= 70 ? theme.success : rate >= 40 ? theme.warning : theme.danger }]}>{rate}%</Text>
                   </TouchableOpacity>
                 )
             })}
@@ -243,29 +248,29 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  screenTitle: { fontSize: 20, fontWeight: '900', color: '#7C3AED' },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  screenTitle: { fontSize: 20, fontWeight: '900' },
   studentHeaderInfo: { flex: 1, marginLeft: 12 },
-  studentName: { fontSize: 16, fontWeight: '800', color: '#1e293b' },
-  studentClass: { fontSize: 12, color: '#64748b', fontWeight: '600' },
-  statsContainer: { backgroundColor: '#fff', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  studentName: { fontSize: 16, fontWeight: '800' },
+  studentClass: { fontSize: 12, fontWeight: '600' },
+  statsContainer: { paddingVertical: 8, borderBottomWidth: 1 },
   statsRowContent: { paddingHorizontal: 16, gap: 8 },
-  statChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: '#f1f5f9', alignItems: 'center', minWidth: 60, backgroundColor: '#fff' },
-  statLabel: { fontSize: 10, fontWeight: '800', color: '#64748b', marginBottom: 2 },
-  statCount: { fontSize: 14, fontWeight: '900', color: '#1e293b' },
-  searchSection: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', margin: 12, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1.5, borderColor: '#e2e8f0' },
+  statChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, alignItems: 'center', minWidth: 60 },
+  statLabel: { fontSize: 10, fontWeight: '800', marginBottom: 2 },
+  statCount: { fontSize: 14, fontWeight: '900' },
+  searchSection: { flexDirection: 'row', alignItems: 'center', margin: 12, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1.5 },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, paddingVertical: 12, fontSize: 14 },
   list: { flex: 1 },
-  studentRow: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fff', marginHorizontal: 12, marginBottom: 8, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  studentRow: { flexDirection: 'row', alignItems: 'center', padding: 16, marginHorizontal: 12, marginBottom: 8, borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2, borderWidth: 1 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   avatarText: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  studentMeta: { fontSize: 12, color: '#64748b' },
+  studentMeta: { fontSize: 12 },
   rate: { fontSize: 16, fontWeight: '900' },
-  hwRow: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  hwTitle: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
-  hwDate: { fontSize: 11, color: '#94a3b8' },
+  hwRow: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 1 },
+  hwTitle: { fontSize: 14, fontWeight: '700' },
+  hwDate: { fontSize: 11 },
   statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, gap: 6 },
   statusBadgeText: { fontSize: 12, fontWeight: '700' },
-})
+});

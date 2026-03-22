@@ -10,59 +10,64 @@ import {
   Alert,
   Linking,
   RefreshControl,
+  Modal,
 } from 'react-native'
 import { useStore } from '../../store/useStore'
 import { HomeworkStatus } from '../../types'
 import { supabase } from '../../lib/supabase'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-
-const STATUS_CONFIG = {
-  [HomeworkStatus.DONE]: {
-    label: 'Tamam',
-    icon: 'checkmark-circle',
-    color: '#10b981',
-    bg: '#d1fae5',
-  },
-  [HomeworkStatus.MISSING]: {
-    label: 'Yapmadı',
-    icon: 'close-circle',
-    color: '#ef4444',
-    bg: '#fee2e2',
-  },
-  [HomeworkStatus.INCOMPLETE]: {
-    label: 'Eksik',
-    icon: 'alert-circle',
-    color: '#f59e0b',
-    bg: '#fef3c7',
-  },
-  [HomeworkStatus.ABSENT]: {
-    label: 'Gelmedi',
-    icon: 'ban',
-    color: '#8b5cf6',
-    bg: '#ede9fe',
-  },
-  [HomeworkStatus.NOT_BROUGHT]: {
-    label: 'Getirmedi',
-    icon: 'archive',
-    color: '#3b82f6',
-    bg: '#dbeafe',
-  },
-  [HomeworkStatus.PENDING]: {
-    label: 'Bekliyor',
-    icon: 'time-outline',
-    color: '#94a3b8',
-    bg: '#f1f5f9',
-  },
-}
+import { useTheme } from '../../constants/Colors'
 
 export default function CheckScreen() {
-  const { students, homeworks, updateSubmission, isLoading, selectedHwId, setSelectedHwId, addMessage, markStatusAsNotified, loadData } = useStore()
+  const theme = useTheme()
+  const { students, homeworks, updateSubmission, isLoading, selectedHwId, setSelectedHwId, addMessage, markStatusAsNotified, loadData, updateTeacherNote } = useStore()
   const [refreshing, setRefreshing] = useState(false)
   const [filter, setFilter] = useState<string>('ALL')
   const [classFilter, setClassFilter] = useState('ALL')
   const [searchStudent, setSearchStudent] = useState('')
   const [searchHomework, setSearchHomework] = useState('')
+  const [editingNote, setEditingNote] = useState<{
+    hwId: string
+    studentId: string
+    studentName: string
+    hwTitle: string
+    currentNote: string
+  } | null>(null)
+  const [tempNote, setTempNote] = useState('')
+
+  const STATUS_CONFIG = useMemo(() => ({
+    [HomeworkStatus.DONE]: {
+      label: 'Tamam',
+      icon: 'checkmark-circle',
+      color: theme.success,
+    },
+    [HomeworkStatus.MISSING]: {
+      label: 'Yapmadı',
+      icon: 'close-circle',
+      color: theme.error,
+    },
+    [HomeworkStatus.INCOMPLETE]: {
+      label: 'Eksik',
+      icon: 'alert-circle',
+      color: theme.warning,
+    },
+    [HomeworkStatus.ABSENT]: {
+      label: 'Gelmedi',
+      icon: 'ban',
+      color: theme.primary,
+    },
+    [HomeworkStatus.NOT_BROUGHT]: {
+      label: 'Getirmedi',
+      icon: 'archive',
+      color: theme.info,
+    },
+    [HomeworkStatus.PENDING]: {
+      label: 'Bekliyor',
+      icon: 'time-outline',
+      color: theme.textMuted,
+    },
+  }), [theme])
 
   const existingClasses = useMemo(
     () => Array.from(new Set(students.map((s) => s.className))).sort(),
@@ -126,11 +131,11 @@ export default function CheckScreen() {
   // 1. Loading State (Shell logic to prevent hook order errors)
   if (isLoading && !refreshing && !selectedHwId) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-            <Text style={styles.screenTitle}>Yükleniyor...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.screenTitle, { color: theme.primary }]}>Yükleniyor...</Text>
         </View>
-        <ActivityIndicator style={{ flex: 1 }} size="large" color="#7C3AED" />
+        <ActivityIndicator style={{ flex: 1 }} size="large" color={theme.primary} />
       </SafeAreaView>
     )
   }
@@ -138,8 +143,8 @@ export default function CheckScreen() {
   // 2. Detail View (Selected Homework)
   if (selectedHw) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
           <TouchableOpacity
             onPress={() => {
               setSelectedHwId(null)
@@ -147,52 +152,59 @@ export default function CheckScreen() {
               setFilter('ALL')
             }}
           >
-            <Ionicons name="chevron-back" size={24} color="#7C3AED" />
+            <Ionicons name="chevron-back" size={24} color={theme.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
             {selectedHw.title}
           </Text>
         </View>
 
-        <View style={styles.statsContainer}>
+        <View style={[styles.statsContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.statsRowContent}>
             {stats.map(({ status, count }) => (
               <TouchableOpacity
                 key={status}
-                style={[styles.statChip, filter === status && styles.statChipActive]}
+                style={[
+                  styles.statChip, 
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                  filter === status && { backgroundColor: theme.primaryLight, borderColor: theme.primary }
+                ]}
                 onPress={() => setFilter(filter === status ? 'ALL' : status)}
               >
-                <Text style={styles.statLabel}>{STATUS_CONFIG[status].label}</Text>
-                <Text style={styles.statCount}>{count}</Text>
+                <Text style={[styles.statLabel, { color: theme.textMuted }]}>{STATUS_CONFIG[status].label}</Text>
+                <Text style={[styles.statCount, { color: theme.text }]}>{count}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         </View>
 
-        <View style={styles.searchSection}>
-          <Ionicons name="search-outline" size={20} color="#94a3b8" style={styles.searchIcon} />
+        <View style={[styles.searchSection, { backgroundColor: theme.surface, borderColor: theme.borderStrong }]}>
+          <Ionicons name="search-outline" size={20} color={theme.textLight} style={styles.searchIcon} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.text }]}
             placeholder="Öğrenci ara..."
+            placeholderTextColor={theme.textLight}
             value={searchStudent}
             onChangeText={setSearchStudent}
           />
         </View>
 
-        <ScrollView style={styles.studentList} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7C3AED']} tintColor="#7C3AED" />}>
+        <ScrollView style={styles.studentList} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.primary]} tintColor={theme.primary} />}>
           {relevantStudents.map((student) => {
             const status = selectedHw.submissions[student.id] || HomeworkStatus.PENDING
             const cfg = STATUS_CONFIG[status]
             return (
-              <View key={student.id} style={styles.studentRow}>
+              <View key={student.id} style={[styles.studentRow, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                 <View style={styles.studentInfo}>
                   <View style={styles.studentNameRow}>
-                    <View style={styles.inlineClassBadge}><Text style={styles.inlineClassBadgeText}>{student.className}</Text></View>
-                    <Text style={styles.studentName} numberOfLines={2}>{student.name.toUpperCase()}</Text>
+                    <View style={[styles.inlineClassBadge, { backgroundColor: theme.primaryLight, borderColor: theme.primary + '30' }]}>
+                      <Text style={[styles.inlineClassBadgeText, { color: theme.primary }]}>{student.className}</Text>
+                    </View>
+                    <Text style={[styles.studentName, { color: theme.text }]} numberOfLines={2}>{student.name.toUpperCase()}</Text>
                   </View>
                   <View style={styles.metaRow}>
-                    <Ionicons name="person-outline" size={12} color="#64748B" style={{ marginRight: 4 }} />
-                    <Text style={styles.metaText}>{student.parentName || 'Belirtilmemiş'}</Text>
+                    <Ionicons name="person-outline" size={12} color={theme.textMuted} style={{ marginRight: 4 }} />
+                    <Text style={[styles.metaText, { color: theme.textMuted }]}>{student.parentName || 'Belirtilmemiş'}</Text>
                   </View>
                 </View>
                 
@@ -204,7 +216,10 @@ export default function CheckScreen() {
                       return (
                         <TouchableOpacity
                           key={st}
-                          style={[styles.statusBtn, isActive ? { backgroundColor: c.color } : { backgroundColor: `${c.color}15` }]}
+                          style={[
+                            styles.statusBtn, 
+                            isActive ? { backgroundColor: c.color } : { backgroundColor: `${c.color}15` }
+                          ]}
                           onPress={() => updateSubmission(selectedHw.id, student.id, status === st ? HomeworkStatus.PENDING : st as HomeworkStatus)}
                         >
                           <Ionicons name={c.icon as any} size={18} color={isActive ? '#fff' : c.color} />
@@ -213,6 +228,7 @@ export default function CheckScreen() {
                     })}
                     {student.parentPhone && (() => {
                       const isNotified = selectedHw.notifiedSubmissions?.[student.id] === status
+                      const waBg = isNotified ? (theme.isDark ? `${theme.success}20` : theme.successBg) : theme.overlay
                       return (
                         <TouchableOpacity 
                           onPress={() => {
@@ -221,56 +237,156 @@ export default function CheckScreen() {
                             if (!phone.startsWith('90') && phone.length === 10) phone = '90' + phone
                             if (phone.length === 10 && phone.startsWith('5')) phone = '90' + phone
 
-                            const text = `Merhaba, öğrenciniz ${student.name}'nin "${selectedHw.title}" ödev durumu: ${cfg.label.toUpperCase()}. Bilginize sunarım.`
+                            const statusLabel = cfg.label.toUpperCase()
+                            const teacherNote = selectedHw.teacherNotes?.[student.id]
+                            const noteText = teacherNote ? `\n\nÖğretmen Notu: ${teacherNote}` : ''
+
+                            const text = `Merhaba, öğrenciniz ${student.name}'nin "${selectedHw.title}" ödev durumu: ${statusLabel}.${noteText}\n\nBilginize sunarım.`
                             const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
                             
                             addMessage({ studentId: student.id, content: text, type: 'text' })
                             markStatusAsNotified(selectedHw.id, student.id, status)
                             Linking.openURL(url)
                           }}
-                          style={[styles.waBtn, isNotified && styles.waBtnNotified]}
+                          style={[
+                            styles.waBtn, 
+                            { backgroundColor: waBg, borderColor: isNotified ? theme.success : theme.border },
+                          ]}
                         >
-                          <Ionicons name={isNotified ? "checkmark-done-circle" : "logo-whatsapp"} size={18} color={isNotified ? "#059669" : "#25D366"} />
-                        </TouchableOpacity>
-                      )
-                    })()}
-                  </View>
-                </ScrollView>
+                          <Ionicons 
+                            name={isNotified ? "checkmark-done-circle" : "logo-whatsapp"} 
+                            size={18} 
+                            color={isNotified ? theme.success : "#25D366"}                           />
+                         </TouchableOpacity>
+                       )
+                     })()}
+                     <TouchableOpacity
+                       style={[
+                         styles.statusBtn, 
+                         { backgroundColor: theme.isDark ? `${theme.primary}20` : `${theme.primary}10` },
+                         selectedHw.teacherNotes?.[student.id] && { backgroundColor: theme.primary + '30' }
+                       ]}
+                       onPress={() => {
+                         setEditingNote({
+                           hwId: selectedHw.id,
+                           studentId: student.id,
+                           studentName: student.name,
+                           hwTitle: selectedHw.title,
+                           currentNote: selectedHw.teacherNotes?.[student.id] || ''
+                         })
+                         setTempNote(selectedHw.teacherNotes?.[student.id] || '')
+                       }}
+                     >
+                       <Ionicons 
+                         name={selectedHw.teacherNotes?.[student.id] ? "document-text" : "document-text-outline"} 
+                         size={18} 
+                         color={theme.primary} 
+                       />
+                     </TouchableOpacity>
+                   </View>
+                 </ScrollView>
               </View>
             )
           })}
         </ScrollView>
+
+        {/* Teacher Note Modal (Detail View) */}
+        <Modal
+          visible={!!editingNote}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setEditingNote(null)}
+        >
+          <TouchableOpacity 
+            style={styles.modalOverlay} 
+            activeOpacity={1} 
+            onPress={() => setEditingNote(null)}
+          >
+            <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: theme.text }]}>Öğretmen Notu</Text>
+                <TouchableOpacity onPress={() => setEditingNote(null)}>
+                  <Ionicons name="close" size={24} color={theme.textLight} />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalTargetInfo}>
+                <Text style={[styles.modalStudentName, { color: theme.primary }]}>{editingNote?.studentName}</Text>
+                <Text style={[styles.modalHwTitle, { color: theme.textMuted }]}>{editingNote?.hwTitle}</Text>
+              </View>
+
+              <TextInput
+                style={[
+                  styles.noteInput, 
+                  { 
+                    backgroundColor: theme.background, 
+                    color: theme.text,
+                    borderColor: theme.borderStrong
+                  }
+                ]}
+                multiline
+                numberOfLines={4}
+                placeholder="Öğrenciye özel notunuzu buraya yazın..."
+                placeholderTextColor={theme.textLight}
+                value={tempNote}
+                onChangeText={setTempNote}
+                autoFocus
+              />
+
+              <TouchableOpacity
+                style={[styles.saveNoteBtn, { backgroundColor: theme.primary }]}
+                onPress={async () => {
+                  if (editingNote) {
+                    await updateTeacherNote(editingNote.hwId, editingNote.studentId, tempNote)
+                    setEditingNote(null)
+                  }
+                }}
+              >
+                <Text style={styles.saveNoteBtnText}>Notu Kaydet</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </SafeAreaView>
     )
   }
 
   // 3. Main Dashboard View
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.screenTitle}>Kontrol Paneli</Text>
-        <Text style={styles.countBadge}>{homeworks.length} Ödev</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.screenTitle, { color: theme.primary }]}>Kontrol Paneli</Text>
+        <Text style={[styles.countBadge, { color: theme.primary, backgroundColor: theme.primaryLight }]}>{homeworks.length} Ödev</Text>
       </View>
 
-      <View style={styles.searchSection}>
-        <Ionicons name="search-outline" size={20} color="#94a3b8" style={styles.searchIcon} />
+      <View style={[styles.searchSection, { backgroundColor: theme.surface, borderColor: theme.borderStrong }]}>
+        <Ionicons name="search-outline" size={20} color={theme.textLight} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: theme.text }]}
           placeholder="Ödev ara..."
+          placeholderTextColor={theme.textLight}
           value={searchHomework}
           onChangeText={setSearchHomework}
         />
       </View>
 
-      <View style={styles.filterContainer}>
+      <View style={[styles.filterContainer, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRowContent}>
           {['ALL', ...existingClasses].map((cls) => (
             <TouchableOpacity
               key={cls}
-              style={[styles.filterChip, classFilter === cls && styles.filterChipActive]}
+              style={[
+                styles.filterChip, 
+                { backgroundColor: theme.background, borderColor: theme.borderStrong },
+                classFilter === cls && { backgroundColor: theme.primary, borderColor: theme.primary }
+              ]}
               onPress={() => setClassFilter(cls)}
             >
-              <Text style={[styles.filterChipText, classFilter === cls && styles.filterChipTextActive]}>
+              <Text style={[
+                styles.filterChipText, 
+                { color: theme.textMuted },
+                classFilter === cls && { color: '#fff' }
+              ]}>
                 {cls === 'ALL' ? 'Tümü' : cls}
               </Text>
             </TouchableOpacity>
@@ -278,7 +394,7 @@ export default function CheckScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#7C3AED']} tintColor="#7C3AED" />}>
+      <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 16 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.primary]} tintColor={theme.primary} />}>
         {sortedHomeworks
           .filter((hw) => classFilter === 'ALL' || hw.targetClasses.includes(classFilter))
           .filter((hw) => hw.title.toLowerCase().includes(searchHomework.toLowerCase()))
@@ -288,93 +404,211 @@ export default function CheckScreen() {
             const pct = relCount > 0 ? Math.round((doneCount / relCount) * 100) : 0
 
             return (
-              <TouchableOpacity key={hw.id} style={styles.hwCard} onPress={() => setSelectedHwId(hw.id)}>
+              <TouchableOpacity key={hw.id} style={[styles.hwCard, { backgroundColor: theme.surface, borderColor: theme.border }]} onPress={() => setSelectedHwId(hw.id)}>
                 <View style={styles.hwCardTop}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.hwTitle} numberOfLines={2}>{hw.title}</Text>
-                    {hw.description ? <Text style={styles.hwDesc} numberOfLines={2}>{hw.description}</Text> : null}
-                    <View style={styles.hwMeta}>{hw.targetClasses.map(cls => <View key={cls} style={styles.tag}><Text style={styles.tagText}>{cls}</Text></View>)}</View>
-                    <Text style={styles.hwDate}>Son teslim: {new Date(hw.dueDate).toLocaleDateString('tr-TR')}</Text>
+                    <Text style={[styles.hwTitle, { color: theme.text }]} numberOfLines={2}>{hw.title}</Text>
+                    {hw.description ? <Text style={[styles.hwDesc, { color: theme.textMuted }]} numberOfLines={2}>{hw.description}</Text> : null}
+                    <View style={styles.hwMeta}>
+                      {hw.targetClasses.map(cls => (
+                        <View key={cls} style={[styles.tag, { backgroundColor: theme.primaryLight }]}>
+                          <Text style={[styles.tagText, { color: theme.primary }]}>{cls}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Text style={[styles.hwDate, { color: theme.textLight }]}>Son teslim: {new Date(hw.dueDate).toLocaleDateString('tr-TR')}</Text>
                   </View>
                 </View>
-                <View style={styles.hwActionsFooter}>
+                <View style={[styles.hwActionsFooter, { backgroundColor: theme.background, borderTopColor: theme.border }]}>
                   <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text style={styles.progressLabel}>İlerleme:</Text>
-                    <Text style={styles.progressValue}>{pct}% • {doneCount}/{relCount} Tamam</Text>
+                    <Text style={[styles.progressLabel, { color: theme.text }]}>İlerleme:</Text>
+                    <Text style={[styles.progressValue, { color: theme.primary }]}>{pct}% • {doneCount}/{relCount} Tamam</Text>
                   </View>
-                  <Text style={styles.checkLink}>Kontrol Et →</Text>
+                  <Text style={[styles.checkLink, { color: theme.primary }]}>Kontrol Et →</Text>
                 </View>
               </TouchableOpacity>
             )
           })}
         {homeworks.length === 0 && (
           <View style={styles.emptyState}>
-            <Ionicons name="file-tray-outline" size={64} color="#cbd5e1" />
-            <Text style={styles.emptyText}>Henüz ödev oluşturulmadı</Text>
+            <Ionicons name="file-tray-outline" size={64} color={theme.textLight} />
+            <Text style={[styles.emptyText, { color: theme.textLight }]}>Henüz ödev oluşturulmadı</Text>
           </View>
         )}
       </ScrollView>
+
+      {/* Teacher Note Modal */}
+      <Modal
+        visible={!!editingNote}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingNote(null)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setEditingNote(null)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Öğretmen Notu</Text>
+              <TouchableOpacity onPress={() => setEditingNote(null)}>
+                <Ionicons name="close" size={24} color={theme.textLight} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalTargetInfo}>
+              <Text style={[styles.modalStudentName, { color: theme.primary }]}>{editingNote?.studentName}</Text>
+              <Text style={[styles.modalHwTitle, { color: theme.textMuted }]}>{editingNote?.hwTitle}</Text>
+            </View>
+
+            <TextInput
+              style={[
+                styles.noteInput, 
+                { 
+                  backgroundColor: theme.background, 
+                  color: theme.text,
+                  borderColor: theme.borderStrong
+                }
+              ]}
+              multiline
+              numberOfLines={4}
+              placeholder="Öğrenciye özel notunuzu buraya yazın..."
+              placeholderTextColor={theme.textLight}
+              value={tempNote}
+              onChangeText={setTempNote}
+              autoFocus
+            />
+
+            <TouchableOpacity
+              style={[styles.saveNoteBtn, { backgroundColor: theme.primary }]}
+              onPress={async () => {
+                if (editingNote) {
+                  await updateTeacherNote(editingNote.hwId, editingNote.studentId, tempNote)
+                  setEditingNote(null)
+                }
+              }}
+            >
+              <Text style={styles.saveNoteBtnText}>Notu Kaydet</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  screenTitle: { fontSize: 20, fontWeight: '900', color: '#7C3AED' },
-  headerTitle: { flex: 1, fontSize: 16, fontWeight: '800', color: '#1e293b', marginHorizontal: 12 },
-  countBadge: { fontSize: 12, fontWeight: '700', color: '#7C3AED', backgroundColor: '#F5F3FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  searchSection: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 12, marginHorizontal: 12, marginBottom: 12, paddingHorizontal: 12 },
+  screenTitle: { fontSize: 20, fontWeight: '900' },
+  headerTitle: { flex: 1, fontSize: 16, fontWeight: '800', marginHorizontal: 12 },
+  countBadge: { fontSize: 12, fontWeight: '700', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  searchSection: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: 12, marginHorizontal: 12, marginBottom: 12, paddingHorizontal: 12 },
   searchIcon: { marginRight: 8 },
-  searchInput: { flex: 1, paddingVertical: 12, fontSize: 14, color: '#1e293b' },
-  filterContainer: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', marginBottom: 8 },
+  searchInput: { flex: 1, paddingVertical: 12, fontSize: 14 },
+  filterContainer: { borderBottomWidth: 1, marginBottom: 8 },
   filterRowContent: { paddingHorizontal: 16, paddingVertical: 8, alignItems: 'center' },
-  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0' },
-  filterChipActive: { backgroundColor: '#7C3AED', borderColor: '#7C3AED' },
-  filterChipText: { fontSize: 13, fontWeight: '700', color: '#64748b' },
-  filterChipTextActive: { color: '#fff' },
+  filterChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 8, borderWidth: 1 },
+  filterChipActive: {},
+  filterChipText: { fontSize: 13, fontWeight: '700' },
+  filterChipTextActive: {},
   list: { flex: 1, paddingTop: 8 },
-  hwCard: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginVertical: 5, marginHorizontal: 12, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  hwCard: { borderRadius: 16, padding: 14, marginVertical: 5, marginHorizontal: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3, borderWidth: 1 },
   hwCardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  hwTitle: { fontSize: 15, fontWeight: '800', color: '#1e293b', marginBottom: 4 },
-  hwDesc: { fontSize: 13, color: '#64748b', marginBottom: 8 },
+  hwTitle: { fontSize: 15, fontWeight: '800', marginBottom: 4 },
+  hwDesc: { fontSize: 13, marginBottom: 8 },
   hwMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
-  tag: { backgroundColor: '#F5F3FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  tagText: { fontSize: 11, fontWeight: '700', color: '#7C3AED' },
-  hwDate: { fontSize: 11, color: '#94a3b8', fontWeight: '500', marginTop: 4 },
-  hwActionsFooter: { justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#f8fafc', borderTopWidth: 1, borderTopColor: '#f1f5f9', marginTop: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center' },
-  progressLabel: { fontWeight: '800', color: '#1e293b', marginRight: 8, fontSize: 13 },
-  progressValue: { fontWeight: '700', color: '#7C3AED', fontSize: 13 },
-  checkLink: { fontSize: 13, fontWeight: '700', color: '#7C3AED' },
-  statsContainer: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9', marginBottom: 8 },
+  tag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  tagText: { fontSize: 11, fontWeight: '700' },
+  hwDate: { fontSize: 11, fontWeight: '500', marginTop: 4 },
+  hwActionsFooter: { justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 12, borderTopWidth: 1, marginTop: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center' },
+  progressLabel: { fontWeight: '800', marginRight: 8, fontSize: 13 },
+  progressValue: { fontWeight: '700', fontSize: 13 },
+  checkLink: { fontSize: 13, fontWeight: '700' },
+  statsContainer: { borderBottomWidth: 1, marginBottom: 8 },
   statsRowContent: { paddingHorizontal: 12, paddingVertical: 6, alignItems: 'center' },
-  statChip: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8, borderWidth: 1, borderColor: '#f1f5f9', minWidth: 65, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  statChipActive: { backgroundColor: '#F5F3FF', borderColor: '#7C3AED' },
-  statCount: { fontSize: 16, fontWeight: '900', color: '#1e293b', marginTop: 2 },
-  statLabel: { fontSize: 10, color: '#64748b', fontWeight: '700' },
+  statChip: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, marginRight: 8, borderWidth: 1, minWidth: 65, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  statChipActive: {},
+  statCount: { fontSize: 16, fontWeight: '900', marginTop: 2 },
+  statLabel: { fontSize: 10, fontWeight: '700' },
   studentList: { flex: 1, paddingBottom: 20 },
-  studentRow: { backgroundColor: '#fff', borderRadius: 20, padding: 16, marginHorizontal: 12, marginBottom: 12, shadowColor: '#0f172a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
+  studentRow: { borderRadius: 20, padding: 16, marginHorizontal: 12, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2, borderWidth: 1 },
   studentInfo: { marginBottom: 12 },
   studentNameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  inlineClassBadge: { backgroundColor: '#F5F3FF', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginRight: 8, borderWidth: 1, borderColor: '#DDD6FE' },
-  inlineClassBadgeText: { fontSize: 10, fontWeight: '800', color: '#7C3AED' },
-  studentName: { fontSize: 15, fontWeight: '800', color: '#0F172A', flex: 1 },
+  inlineClassBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginRight: 8, borderWidth: 1 },
+  inlineClassBadgeText: { fontSize: 10, fontWeight: '800' },
+  studentName: { fontSize: 15, fontWeight: '800', flex: 1 },
   metaRow: { flexDirection: 'row', alignItems: 'center' },
-  metaText: { fontSize: 12, color: '#64748B', fontWeight: '600' },
+  metaText: { fontSize: 12, fontWeight: '600' },
   statusButtonsContainer: { paddingRight: 4 },
   statusButtons: { flexDirection: 'row', gap: 8 },
   statusBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  waBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#dcfce7', borderWidth: 1, borderColor: '#bbf7d0' },
-  waBtnNotified: { backgroundColor: '#dcfce7' },
+  waBtn: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  waBtnNotified: {},
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 },
-  emptyText: { fontSize: 15, color: '#94a3b8', fontWeight: '600', marginTop: 12 },
+  emptyText: { fontSize: 15, fontWeight: '600', marginTop: 12 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  modalTargetInfo: {
+    marginBottom: 20,
+  },
+  modalStudentName: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  modalHwTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  noteInput: {
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 15,
+    height: 120,
+    textAlignVertical: 'top',
+    borderWidth: 1.5,
+    marginBottom: 20,
+  },
+  saveNoteBtn: {
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+  },
+  saveNoteBtnText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
 })

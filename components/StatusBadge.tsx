@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { HomeworkStatus } from '../types';
+import { useTheme } from '../constants/Colors';
 
 export const STATUS_LABELS: Record<HomeworkStatus, { label: string; color: string; bgColor: string }> = {
   [HomeworkStatus.DONE]: { label: 'Tamam', color: '#10b981', bgColor: '#d1fae5' },
@@ -17,10 +18,15 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge = ({ status, style }: StatusBadgeProps) => {
+  const theme = useTheme();
+  const isDark = theme.isDark;
   const config = STATUS_LABELS[status] || STATUS_LABELS[HomeworkStatus.PENDING];
   
+  // Karanlık modda arka plan opaklığını düşürelim
+  const bgColor = isDark ? `${config.color}20` : config.bgColor;
+  
   return (
-    <View style={[styles.badge, { backgroundColor: config.bgColor }, style]}>
+    <View style={[styles.badge, { backgroundColor: bgColor, borderColor: isDark ? config.color : 'transparent' }, style]}>
       <Text style={[styles.label, { color: config.color }]}>{config.label}</Text>
     </View>
   );
@@ -32,7 +38,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'transparent',
     alignSelf: 'flex-start',
   },
   label: {

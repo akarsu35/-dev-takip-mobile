@@ -19,11 +19,12 @@ import { Ionicons } from '@expo/vector-icons'
 import * as WebBrowser from 'expo-web-browser'
 import * as AuthSession from 'expo-auth-session'
 import { makeRedirectUri } from 'expo-auth-session'
-import * as Linking from 'expo-linking'
+import { useTheme } from '../../constants/Colors'
 
 WebBrowser.maybeCompleteAuthSession()
 
 export default function LoginScreen() {
+  const theme = useTheme()
   const router = useRouter()
   const loadData = useStore((s) => s.loadData)
   const [email, setEmail] = useState('')
@@ -77,11 +78,6 @@ export default function LoginScreen() {
         preferLocalhost: false,
       })
       
-      console.log('--- REDIRECT URI DEBUG ---')
-      console.log('Platform:', Platform.OS)
-      console.log('Redirect URI:', redirectUri)
-      console.log('Constants.appOwnership:', require('expo-constants').default.appOwnership)
-
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -93,14 +89,6 @@ export default function LoginScreen() {
       if (error) throw error
       
       if (data?.url) {
-        console.log('--- SUPABASE OAUTH START ---')
-        console.log('Redirect URI Sent:', redirectUri)
-        console.log('Supabase URL Generated:', data.url)
-        
-        if (data.url.includes('localhost:3000')) {
-          console.warn('WARNING: Supabase default redirect detected. Check dashboard settings!')
-        }
-
         // _layout onAuthStateChange'in bu flow'da navigation'a müdahale etmesini engelle
         suppressAuthNav.current = true
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri)
@@ -113,7 +101,7 @@ export default function LoginScreen() {
         }
       }
     } catch (error: any) {
-      Alert.alert('Giriş Hatası', 'Google ile giriş yapılamadı. Redirect URL ayarlarını kontrol edin.')
+      Alert.alert('Giriş Hatası', 'Google ile giriş yapılamadı.')
       console.error('Google Login Error:', error)
       setLoading(false)
     }
@@ -140,12 +128,10 @@ export default function LoginScreen() {
       }
 
       // OAuth redirect sonrası ağın toparlaması için bekle (Android'de network hiccup olabiliyor)
-      console.log('handleAuthResult: Waiting for network to settle...')
       await new Promise(resolve => setTimeout(resolve, 1500))
 
       // Önce veriyi yükle (force=true: askıdaki yüklemeyi iptal edip yeniden başlat)
       if (userId) {
-        console.log('handleAuthResult: Loading data for userId:', userId)
         await loadData(userId, true) // force=true
       }
 
@@ -177,7 +163,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -186,31 +172,31 @@ export default function LoginScreen() {
       >
         {/* Logo */}
         <View style={styles.logoContainer}>
-          <View style={styles.logoIcon}>
+          <View style={[styles.logoIcon, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
             <Text style={styles.logoIconText}>✓</Text>
           </View>
-          <Text style={styles.logoText}>ÖDEV TAKİP</Text>
-          <Text style={styles.logoSubtext}>
+          <Text style={[styles.logoText, { color: theme.text }]}>ÖDEV TAKİP</Text>
+          <Text style={[styles.logoSubtext, { color: theme.textMuted }]}>
             Öğretmenler için akıllı ödev yönetimi
           </Text>
         </View>
 
         {/* Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>
             {isSignUp ? 'Hesap Oluştur' : 'Tekrar Hoş Geldiniz'}
           </Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>E-POSTA</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: theme.textMuted }]}>E-POSTA</Text>
+            <View style={[styles.inputContainer, { backgroundColor: theme.background, borderColor: theme.borderStrong }]}>
+              <Ionicons name="mail-outline" size={20} color={theme.textLight} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.text }]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="ornek@email.com"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={theme.textLight}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -218,15 +204,15 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>ŞİFRE</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#94a3b8" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: theme.textMuted }]}>ŞİFRE</Text>
+            <View style={[styles.inputContainer, { backgroundColor: theme.background, borderColor: theme.borderStrong }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={theme.textLight} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: theme.text }]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
-                placeholderTextColor="#94a3b8"
+                placeholderTextColor={theme.textLight}
                 secureTextEntry
               />
             </View>
@@ -234,12 +220,12 @@ export default function LoginScreen() {
 
           {!isSignUp && (
             <TouchableOpacity style={styles.forgotBtn}>
-              <Text style={styles.forgotText}>Şifremi Unuttum</Text>
+              <Text style={[styles.forgotText, { color: theme.primary }]}>Şifremi Unuttum</Text>
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: theme.primary, shadowColor: theme.primary }, loading && styles.buttonDisabled]}
             onPress={handleAuth}
             disabled={loading}
           >
@@ -253,25 +239,25 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.dividerText}>veya</Text>
-            <View style={styles.line} />
+            <View style={[styles.line, { backgroundColor: theme.border }]} />
+            <Text style={[styles.dividerText, { color: theme.textLight }]}>veya</Text>
+            <View style={[styles.line, { backgroundColor: theme.border }]} />
           </View>
 
           <TouchableOpacity
-            style={styles.googleButton}
+            style={[styles.googleButton, { backgroundColor: theme.surface, borderColor: theme.borderStrong }]}
             onPress={handleGoogleLogin}
             disabled={loading}
           >
-            <Ionicons name="logo-google" size={20} color="#1e293b" />
-            <Text style={styles.googleButtonText}>Google ile Devam Et</Text>
+            <Ionicons name="logo-google" size={20} color={theme.text} />
+            <Text style={[styles.googleButtonText, { color: theme.text }]}>Google ile Devam Et</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.switchButton}
             onPress={() => setIsSignUp(!isSignUp)}
           >
-            <Text style={styles.switchText}>
+            <Text style={[styles.switchText, { color: theme.textMuted }]}>
               {isSignUp
                 ? 'Zaten hesabınız var mı? Giriş yap'
                 : 'Hesabınız yok mu? Hemen katılın'}
@@ -286,7 +272,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scroll: {
     flexGrow: 1,
@@ -301,11 +286,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: '#7C3AED',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
-    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 15,
@@ -319,25 +302,21 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#1e293b',
     letterSpacing: 1,
   },
   logoSubtext: {
     fontSize: 14,
-    color: '#64748b',
     marginTop: 8,
     textAlign: 'center',
     fontWeight: '500',
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 30,
     padding: 24,
   },
   cardTitle: {
     fontSize: 24,
     fontWeight: '900',
-    color: '#1e293b',
     marginBottom: 32,
     textAlign: 'center'
   },
@@ -347,7 +326,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '900',
-    color: '#94a3b8',
     letterSpacing: 1.5,
     marginBottom: 8,
     marginLeft: 4,
@@ -355,10 +333,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#f1f5f9',
     paddingHorizontal: 16,
   },
   inputIcon: {
@@ -368,7 +344,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     fontSize: 15,
-    color: '#1e293b',
     fontWeight: '600',
   },
   forgotBtn: {
@@ -376,16 +351,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   forgotText: {
-    color: '#7C3AED',
     fontSize: 13,
     fontWeight: '700',
   },
   button: {
-    backgroundColor: '#7C3AED',
     borderRadius: 16,
     padding: 18,
     alignItems: 'center',
-    shadowColor: '#7C3AED',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -408,27 +380,22 @@ const styles = StyleSheet.create({
   line: {
     flex: 1,
     height: 1,
-    backgroundColor: '#f1f5f9',
   },
   dividerText: {
     marginHorizontal: 16,
-    color: '#94a3b8',
     fontSize: 13,
     fontWeight: '700',
   },
   googleButton: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: '#f1f5f9',
     gap: 12,
   },
   googleButtonText: {
-    color: '#1e293b',
     fontSize: 15,
     fontWeight: '700',
   },
@@ -438,8 +405,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   switchText: {
-    color: '#64748b',
     fontSize: 14,
     fontWeight: '600',
   },
-})
+});

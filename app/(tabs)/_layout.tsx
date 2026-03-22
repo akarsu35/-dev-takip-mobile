@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useTheme } from '../../constants/Colors'
 
 function TabIcon({
   focused,
@@ -11,14 +12,23 @@ function TabIcon({
   name: keyof typeof Ionicons.glyphMap
   label: string
 }) {
+  const theme = useTheme();
+  
   return (
-    <View style={[styles.tabItem, focused && styles.tabItemActive]}>
+    <View style={[
+      styles.tabItem, 
+      focused && { backgroundColor: theme.primaryLight }
+    ]}>
       <Ionicons 
         name={focused ? name : (name + '-outline' as any)} 
         size={22} 
-        color={focused ? '#7C3AED' : '#94a3b8'} 
+        color={focused ? theme.primary : theme.textLight} 
       />
-      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>
+      <Text style={[
+        styles.tabLabel, 
+        { color: theme.textLight },
+        focused && { color: theme.primary, fontWeight: '800' }
+      ]}>
         {label}
       </Text>
     </View>
@@ -26,11 +36,16 @@ function TabIcon({
 }
 
 export default function TabLayout() {
+  const theme = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { 
+          backgroundColor: theme.surface,
+          borderTopColor: theme.border,
+        }],
         tabBarShowLabel: false,
       }}
     >
@@ -55,6 +70,14 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon focused={focused} name="people" label="Sınıflar" />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon focused={focused} name="calendar" label="Takvim" />
           ),
         }}
       />
@@ -100,13 +123,11 @@ export default function TabLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
     height: 90,
     paddingBottom: 24,
     paddingTop: 12,
-    shadowColor: '#0f172a',
+    borderTopWidth: 1,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.06,
     shadowRadius: 12,
@@ -116,25 +137,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     borderRadius: 16,
-    minWidth: 64,
-  },
-  tabItemActive: {
-    backgroundColor: '#F5F3FF',
-  },
-  tabIcon: {
-    marginBottom: 4,
+    minWidth: 55,
   },
   tabLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#94a3b8',
     letterSpacing: 0.2,
     marginTop: 4,
-  },
-  tabLabelActive: {
-    color: '#7C3AED',
-    fontWeight: '800',
   },
 })

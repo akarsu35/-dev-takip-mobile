@@ -21,9 +21,11 @@ import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as XLSX from 'xlsx'
 import { Ionicons } from '@expo/vector-icons'
+import { useTheme } from '../../constants/Colors'
 
 export default function StudentsScreen() {
   const router = useRouter()
+  const theme = useTheme()
   const { students, addStudent, deleteStudent, updateStudent, bulkAddStudents, isLoading, loadData } = useStore()
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState('')
@@ -175,27 +177,27 @@ export default function StudentsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {isLoading && !refreshing ? (
         <>
-          <View style={styles.header}>
-            <Text style={styles.screenTitle}>Yükleniyor...</Text>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.screenTitle, { color: theme.text }]}>Yükleniyor...</Text>
           </View>
-          <ActivityIndicator style={{ flex: 1 }} size="large" color="#7C3AED" />
+          <ActivityIndicator style={{ flex: 1 }} size="large" color={theme.primary} />
         </>
       ) : (
         <>
-          <View style={styles.header}>
-            <Text style={styles.screenTitle}>👥 Öğrenciler</Text>
+          <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+            <Text style={[styles.screenTitle, { color: theme.primary }]}>👥 Öğrenciler</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity
-                style={[styles.addBtn, { backgroundColor: '#F5F3FF', borderWidth: 1, borderColor: '#7C3AED' }]}
+                style={[styles.addBtn, { backgroundColor: theme.primaryLight, borderWidth: 1, borderColor: theme.primary }]}
                 onPress={handleExcelImport}
               >
-                <Text style={[styles.addBtnText, { color: '#7C3AED' }]}>📊 Excel'den Yükle</Text>
+                <Text style={[styles.addBtnText, { color: theme.primary }]}>📊 Excel'den Yükle</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.addBtn}
+                style={[styles.addBtn, { backgroundColor: theme.primary }]}
                 onPress={() => setShowForm(true)}
               >
                 <Text style={styles.addBtnText}>+ Ekle</Text>
@@ -204,12 +206,13 @@ export default function StudentsScreen() {
           </View>
 
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { backgroundColor: theme.surface, borderColor: theme.borderStrong, color: theme.text }]}
             placeholder="🔍 Öğrenci ara..."
+            placeholderTextColor={theme.textLight}
             value={search}
             onChangeText={setSearch}
           />
-          <Text style={styles.countText}>{students.length} öğrenci</Text>
+          <Text style={[styles.countText, { color: theme.textLight }]}>{students.length} öğrenci</Text>
 
           <ScrollView
             style={styles.list}
@@ -223,8 +226,8 @@ export default function StudentsScreen() {
                   if (user) await loadData(user.id)
                   setRefreshing(false)
                 }}
-                colors={['#7C3AED']}
-                tintColor="#7C3AED"
+                colors={[theme.primary]}
+                tintColor={theme.primary}
               />
             }
           >
@@ -233,43 +236,43 @@ export default function StudentsScreen() {
               return (
                 <View key={cls}>
                   <TouchableOpacity 
-                    style={styles.classHeader}
+                    style={[styles.classHeader, { backgroundColor: theme.background, borderBottomColor: theme.border }]}
                     onPress={() => toggleClass(cls)}
                     activeOpacity={0.7}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                      <Text style={{ fontSize: 16, color: '#7C3AED', fontWeight: '800' }}>
+                      <Text style={{ fontSize: 16, color: theme.primary, fontWeight: '800' }}>
                         {isExpanded ? '▼' : '▶'}
                       </Text>
-                      <Text style={styles.classTitle}>{cls} Sınıfı</Text>
+                      <Text style={[styles.classTitle, { color: theme.text }]}>{cls} Sınıfı</Text>
                     </View>
-                    <View style={styles.classCountBadge}>
+                    <View style={[styles.classCountBadge, { backgroundColor: theme.primary }]}>
                       <Text style={styles.classCountText}>{classStudents.length} Öğrenci</Text>
                     </View>
                   </TouchableOpacity>
                   
                   {isExpanded && classStudents.map((s) => (
-                    <View key={s.id} style={styles.studentCard}>
+                    <View key={s.id} style={[styles.studentCard, { backgroundColor: theme.surface, borderColor: theme.border }]}>
                       <View style={styles.studentInfoContainer}>
                         <View style={styles.nameRow}>
-                          <View style={styles.classBadge}>
-                            <Text style={styles.classBadgeText}>{s.className}</Text>
+                          <View style={[styles.classBadge, { backgroundColor: theme.primaryLight, borderColor: theme.borderStrong }]}>
+                            <Text style={[styles.classBadgeText, { color: theme.primary }]}>{s.className}</Text>
                           </View>
-                          <Text style={styles.studentNameDisplay} numberOfLines={1}>
+                          <Text style={[styles.studentNameDisplay, { color: theme.text }]} numberOfLines={1}>
                             {s.name.toUpperCase()}
                           </Text>
                         </View>
                         
                         <View style={styles.metaRow}>
                           <View style={styles.metaItem}>
-                            <Ionicons name="person-outline" size={14} color="#64748b" style={{ marginRight: 4 }} />
-                            <Text style={styles.metaText} numberOfLines={1}>
+                            <Ionicons name="person-outline" size={14} color={theme.textLight} style={{ marginRight: 4 }} />
+                            <Text style={[styles.metaText, { color: theme.textMuted }]} numberOfLines={1}>
                               {s.parentName || 'Belirtilmemiş'}
                             </Text>
                           </View>
                           <View style={styles.metaItem}>
-                            <Ionicons name="call-outline" size={14} color="#64748b" style={{ marginRight: 4 }} />
-                            <Text style={styles.metaText}>
+                            <Ionicons name="call-outline" size={14} color={theme.textLight} style={{ marginRight: 4 }} />
+                            <Text style={[styles.metaText, { color: theme.textMuted }]}>
                               {s.parentPhone || '-'}
                             </Text>
                           </View>
@@ -284,21 +287,21 @@ export default function StudentsScreen() {
                               params: { studentId: s.id }
                             })
                           }}
-                          style={[styles.actionBtn, { backgroundColor: '#F5F3FF' }]}
+                          style={[styles.actionBtn, { backgroundColor: theme.primaryLight }]}
                         >
-                          <Ionicons name="trending-up" size={18} color="#7C3AED" />
+                          <Ionicons name="trending-up" size={18} color={theme.primary} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleEdit(s)}
-                          style={[styles.actionBtn, { backgroundColor: '#FFFBEB' }]}
+                          style={[styles.actionBtn, { backgroundColor: theme.warning + '20' }]}
                         >
-                          <Ionicons name="pencil" size={18} color="#F59E0B" />
+                          <Ionicons name="pencil" size={18} color={theme.warning} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDelete(s)}
-                          style={[styles.actionBtn, { backgroundColor: '#FEF2F2' }]}
+                          style={[styles.actionBtn, { backgroundColor: theme.danger + '20' }]}
                         >
-                          <Ionicons name="trash" size={18} color="#EF4444" />
+                          <Ionicons name="trash" size={18} color={theme.danger} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -309,7 +312,7 @@ export default function StudentsScreen() {
             {filtered.length === 0 && (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyIcon}>👤</Text>
-                <Text style={styles.emptyText}>Öğrenci bulunamadı</Text>
+                <Text style={[styles.emptyText, { color: theme.textLight }]}>Öğrenci bulunamadı</Text>
               </View>
             )}
           </ScrollView>
@@ -321,21 +324,21 @@ export default function StudentsScreen() {
         animationType="slide"
         presentationStyle="pageSheet"
       >
-        <SafeAreaView style={styles.modal}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modal, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
             <TouchableOpacity
               onPress={() => {
                 setShowForm(false)
                 resetForm()
               }}
             >
-              <Text style={styles.modalCancel}>İptal</Text>
+              <Text style={[styles.modalCancel, { color: theme.textLight }]}>İptal</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
               {editingStudent ? 'Öğrenci Düzenle' : 'Yeni Öğrenci'}
             </Text>
             <TouchableOpacity onPress={handleSubmit}>
-              <Text style={styles.modalSave}>Kaydet</Text>
+              <Text style={[styles.modalSave, { color: theme.primary }]}>Kaydet</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -370,12 +373,13 @@ export default function StudentsScreen() {
               },
             ].map(({ label, val, setVal, placeholder, keyboard }: any) => (
               <View key={label}>
-                <Text style={styles.fieldLabel}>{label}</Text>
+                <Text style={[styles.fieldLabel, { color: theme.textLight }]}>{label}</Text>
                 <TextInput
-                  style={styles.fieldInput}
+                  style={[styles.fieldInput, { backgroundColor: theme.surface, borderColor: theme.borderStrong, color: theme.text }]}
                   value={val}
                   onChangeText={setVal}
                   placeholder={placeholder}
+                  placeholderTextColor={theme.textLight}
                   keyboardType={keyboard || 'default'}
                 />
               </View>
@@ -388,39 +392,32 @@ export default function StudentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  screenTitle: { fontSize: 20, fontWeight: '900', color: '#7C3AED' },
+  screenTitle: { fontSize: 20, fontWeight: '900' },
   addBtn: {
-    backgroundColor: '#7C3AED',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
   },
-  addBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
+  addBtnText: { fontWeight: '800', fontSize: 13 },
   searchInput: {
     margin: 12,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 14,
     padding: 12,
     fontSize: 14,
-    backgroundColor: '#fff',
-    color: '#1e293b',
   },
   countText: {
     paddingHorizontal: 16,
     fontSize: 12,
-    color: '#94a3b8',
     fontWeight: '700',
     marginBottom: 4,
   },
@@ -431,13 +428,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#F1F5F9',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
   },
-  classTitle: { fontSize: 15, fontWeight: '900', color: '#1E293B', letterSpacing: 0.5 },
+  classTitle: { fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
   classCountBadge: {
-    backgroundColor: '#7C3AED',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
@@ -448,37 +442,32 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   studentCard: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#0f172a',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
   },
   studentInfoContainer: { flex: 1, marginRight: 12 },
   nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   classBadge: {
-    backgroundColor: '#F5F3FF',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#DDD6FE',
   },
-  classBadgeText: { fontSize: 11, fontWeight: '800', color: '#7C3AED' },
+  classBadgeText: { fontSize: 11, fontWeight: '800' },
   studentNameDisplay: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#0F172A',
     flex: 1,
   },
   metaRow: { 
@@ -488,7 +477,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   metaItem: { flexDirection: 'row', alignItems: 'center' },
-  metaText: { fontSize: 13, color: '#64748B', fontWeight: '600' },
+  metaText: { fontSize: 13, fontWeight: '600' },
   actions: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   actionBtn: {
     width: 40,
@@ -499,36 +488,30 @@ const styles = StyleSheet.create({
   },
   emptyState: { alignItems: 'center', paddingTop: 80 },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyText: { fontSize: 15, color: '#94a3b8', fontWeight: '600' },
-  modal: { flex: 1, backgroundColor: '#f8fafc' },
+  emptyText: { fontSize: 15, fontWeight: '600' },
+  modal: { flex: 1 },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
   },
-  modalTitle: { fontSize: 17, fontWeight: '800', color: '#1e293b' },
-  modalCancel: { fontSize: 15, color: '#94a3b8', fontWeight: '600' },
-  modalSave: { fontSize: 15, color: '#7C3AED', fontWeight: '800' },
+  modalTitle: { fontSize: 17, fontWeight: '800' },
+  modalCancel: { fontSize: 15, fontWeight: '600' },
+  modalSave: { fontSize: 15, fontWeight: '800' },
   modalBody: { flex: 1, padding: 16 },
   fieldLabel: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#94a3b8',
     letterSpacing: 1.5,
     marginBottom: 6,
     marginTop: 16,
   },
   fieldInput: {
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
     borderRadius: 12,
     padding: 14,
     fontSize: 15,
-    color: '#1e293b',
-    backgroundColor: '#fff',
   },
-})
+});

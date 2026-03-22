@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Homework, HomeworkStatus, Student } from '../types';
+import { useTheme } from '../constants/Colors';
 
 interface HomeworkCardProps {
   hw: Homework;
@@ -20,6 +21,7 @@ export const HomeworkCard = ({
   onEdit, 
   onDelete 
 }: HomeworkCardProps) => {
+  const theme = useTheme();
   const hasSpecificStudents = hw.targetStudentIds && hw.targetStudentIds.length > 0;
   const relevant = students.filter(s => 
     hasSpecificStudents ? (hw.targetStudentIds || []).includes(s.id) : hw.targetClasses.includes(s.className)
@@ -30,20 +32,20 @@ export const HomeworkCard = ({
   return (
     <Animated.View 
       entering={FadeInDown.duration(400).delay(100)}
-      style={styles.hwCard}
+      style={[styles.hwCard, { backgroundColor: theme.surface, borderColor: theme.border }]}
     >
       <View style={styles.hwHeader}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.hwTitle}>{hw.title}</Text>
+          <Text style={[styles.hwTitle, { color: theme.text }]}>{hw.title}</Text>
           <View style={styles.tagRow}>
             {hw.targetClasses.map((cls) => (
-              <View key={cls} style={styles.classTag}>
-                <Text style={styles.classTagText}>{cls}</Text>
+              <View key={cls} style={[styles.classTag, { backgroundColor: theme.primaryLight, borderColor: theme.borderStrong }]}>
+                <Text style={[styles.classTagText, { color: theme.primary }]}>{cls}</Text>
               </View>
             ))}
             {hasSpecificStudents && (
-              <View style={[styles.classTag, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
-                <Text style={[styles.classTagText, { color: '#D97706' }]}>
+              <View style={[styles.classTag, { backgroundColor: theme.warning + '20', borderColor: theme.warning + '40' }]}>
+                <Text style={[styles.classTagText, { color: theme.warning }]}>
                   Tekil Seçim ({hw.targetStudentIds?.length})
                 </Text>
               </View>
@@ -53,53 +55,53 @@ export const HomeworkCard = ({
       </View>
       
       {hw.description ? (
-        <Text style={styles.hwDesc} numberOfLines={2}>
+        <Text style={[styles.hwDesc, { color: theme.textMuted }]} numberOfLines={2}>
           {hw.description}
         </Text>
       ) : null}
       
-      <View style={styles.hwFooter}>
+      <View style={[styles.hwFooter, { borderTopColor: theme.border }]}>
         <View style={styles.footerDate}>
           <Ionicons
             name="calendar-outline"
             size={14}
-            color="#94a3b8"
+            color={theme.textLight}
             style={{ marginRight: 4 }}
           />
-          <Text style={styles.dueDateText}>
+          <Text style={[styles.dueDateText, { color: theme.textLight }]}>
             Teslim: {new Date(hw.dueDate).toLocaleDateString('tr-TR')}
           </Text>
         </View>
         
         <View style={styles.footerRight}>
           <TouchableOpacity
-            style={[styles.footerBtn, { backgroundColor: '#dcfce7' }]}
+            style={[styles.footerBtn, { backgroundColor: theme.success + '20' }]}
             onPress={() => onNotify(hw)}
           >
-            <Ionicons name="logo-whatsapp" size={15} color="#16a34a" />
-            <Text style={[styles.footerBtnText, { color: '#16a34a' }]}>Bildir</Text>
+            <Ionicons name="logo-whatsapp" size={15} color={theme.success} />
+            <Text style={[styles.footerBtnText, { color: theme.success }]}>Bildir</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.footerBtn, { backgroundColor: '#F5F3FF' }]}
+            style={[styles.footerBtn, { backgroundColor: theme.primaryLight }]}
             onPress={() => onAnalysis(hw)}
           >
-            <Ionicons name="bar-chart-outline" size={15} color="#7C3AED" />
-            <Text style={[styles.footerBtnText, { color: '#7C3AED' }]}>Analiz</Text>
+            <Ionicons name="bar-chart-outline" size={15} color={theme.primary} />
+            <Text style={[styles.footerBtnText, { color: theme.primary }]}>Analiz</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => onEdit(hw)}
-            style={[styles.footerIconBtn, { backgroundColor: '#fff7ed' }]}
+            style={[styles.footerIconBtn, { backgroundColor: theme.warning + '20' }]}
           >
-            <Ionicons name="pencil" size={16} color="#f97316" />
+            <Ionicons name="pencil" size={16} color={theme.warning} />
           </TouchableOpacity>
           
           <TouchableOpacity
             onPress={() => onDelete(hw)}
-            style={[styles.footerIconBtn, { backgroundColor: '#fef2f2' }]}
+            style={[styles.footerIconBtn, { backgroundColor: theme.danger + '20' }]}
           >
-            <Ionicons name="trash" size={16} color="#ef4444" />
+            <Ionicons name="trash" size={16} color={theme.danger} />
           </TouchableOpacity>
         </View>
       </View>
@@ -109,18 +111,16 @@ export const HomeworkCard = ({
 
 const styles = StyleSheet.create({
   hwCard: { 
-    backgroundColor: '#fff', 
     borderRadius: 20, 
     padding: 18, 
     marginHorizontal: 16, 
     marginTop: 16, 
-    shadowColor: '#0f172a', 
+    shadowColor: '#000', 
     shadowOffset: { width: 0, height: 4 }, 
     shadowOpacity: 0.1, 
     shadowRadius: 12, 
     elevation: 3, 
     borderWidth: 1, 
-    borderColor: '#f1f5f9' 
   },
   hwHeader: { 
     flexDirection: 'row', 
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
   hwTitle: { 
     fontSize: 16, 
     fontWeight: '800', 
-    color: '#1e293b', 
     marginBottom: 6 
   },
   tagRow: { 
@@ -140,27 +139,22 @@ const styles = StyleSheet.create({
     gap: 6 
   },
   classTag: { 
-    backgroundColor: '#F5F3FF', 
     paddingHorizontal: 8, 
     paddingVertical: 3, 
     borderRadius: 6, 
     borderWidth: 1, 
-    borderColor: '#DDD6FE' 
   },
   classTagText: { 
     fontSize: 10, 
     fontWeight: '800', 
-    color: '#7C3AED' 
   },
   hwDesc: { 
     fontSize: 14, 
-    color: '#64748b', 
     lineHeight: 20, 
     marginBottom: 12 
   },
   hwFooter: { 
     borderTopWidth: 1, 
-    borderTopColor: '#f1f5f9', 
     paddingTop: 12, 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
@@ -199,7 +193,6 @@ const styles = StyleSheet.create({
   },
   dueDateText: { 
     fontSize: 12, 
-    color: '#94a3b8', 
     fontWeight: '600' 
   },
 });
